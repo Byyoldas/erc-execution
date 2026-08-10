@@ -6,8 +6,8 @@ on:
     branches: [main]
 
 jobs:
-  rust:
-    name: Rust (fmt, clippy, test)
+  build-and-test:
+    name: Build and test
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,6 +17,27 @@ jobs:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm test
+        run: pnpm test
+
+      # tauri::generate_context!() (invoked by src-tauri) requires
+      # frontendDist ("../dist") to already exist, so the frontend must be
+      # built before any cargo command touches src-tauri.
+      - name: pnpm build
+        run: pnpm build
 
       - name: cargo fmt --check
         working-directory: src-tauri
@@ -29,27 +50,3 @@ jobs:
       - name: cargo test
         working-directory: src-tauri
         run: cargo test
-
-  frontend:
-    name: Frontend (test, build)
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: pnpm test
-        run: pnpm test
-
-      - name: pnpm build
-        run: pnpm build
