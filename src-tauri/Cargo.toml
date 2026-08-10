@@ -17,7 +17,7 @@ path = "src/main.rs"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-erc-core = { path = "../../erc-core" }
+erc-core = { git = "https://github.com/Byyoldas/erc-core", rev = "23cbd749b5a121fd09e9ea6347977e5f41b3979f" }
 tauri = { version = "2", features = [] }
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"

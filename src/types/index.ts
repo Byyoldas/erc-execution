@@ -1,18 +1,22 @@
 /**
  * Execution App types. Shared types (produced by ts-rs from erc-core structs)
- * are re-exported from the generated bindings; execution-specific DTOs
- * (defined in erc-execution/src-tauri, not yet ts-rs-generated) are
- * hand-written here, matching src-tauri/src/domain/dto.rs.
+ * are re-exported from a local vendored copy of erc-core's generated
+ * bindings (src/bindings/ — erc-core now lives in its own repo,
+ * github.com/Byyoldas/erc-core; re-sync this directory by hand whenever its
+ * DTOs change: `cargo test -p erc-core --features ts-rs` there, then copy
+ * bindings/*.ts here); execution-specific DTOs (defined in
+ * erc-execution/src-tauri, not yet ts-rs-generated) are hand-written here,
+ * matching src-tauri/src/domain/dto.rs.
  */
 
-export type { AppError } from '../../../erc-core/bindings/AppError';
-export type { BudgetSummaryDto } from '../../../erc-core/bindings/BudgetSummaryDto';
-export type { RoleType } from '../../../erc-core/bindings/RoleType';
-export type { CfsStatus } from '../../../erc-core/bindings/CfsStatus';
+export type { AppError } from '../bindings/AppError';
+export type { BudgetSummaryDto } from '../bindings/BudgetSummaryDto';
+export type { RoleType } from '../bindings/RoleType';
+export type { CfsStatus } from '../bindings/CfsStatus';
 
-import type { BudgetSummaryDto } from '../../../erc-core/bindings/BudgetSummaryDto';
-import type { RoleType } from '../../../erc-core/bindings/RoleType';
-import type { CfsStatus } from '../../../erc-core/bindings/CfsStatus';
+import type { BudgetSummaryDto } from '../bindings/BudgetSummaryDto';
+import type { RoleType } from '../bindings/RoleType';
+import type { CfsStatus } from '../bindings/CfsStatus';
 
 export interface ProjectInfoDto {
   project_title: string;
