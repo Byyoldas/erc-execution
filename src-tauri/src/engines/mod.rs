@@ -1,3 +1,4 @@
+pub mod consortium_engine;
 pub mod financial_engine;
 pub mod notification_engine;
 pub mod progress_engine;
