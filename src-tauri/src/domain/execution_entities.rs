@@ -13,7 +13,8 @@
 
 use super::enums::{
     AmendmentStatus, AmendmentType, DeliverableStatus, DeliverableType, DisseminationLevel,
-    EntryStatus, IssueStatus, Level, MilestoneStatus, ReportingPeriodStatus, RiskStatus,
+    EntryStatus, IssueStatus, Level, MilestoneStatus, PartnerRole, PartnerValidationStatus,
+    ReportingPeriodStatus, RiskStatus,
 };
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -51,6 +52,8 @@ pub struct ExecutionData {
     pub risks: Vec<RiskEntry>,
     #[serde(default)]
     pub issues: Vec<IssueEntry>,
+    #[serde(default)]
+    pub partner_organizations: Vec<PartnerOrganization>,
 }
 
 impl Default for ExecutionData {
@@ -70,6 +73,7 @@ impl Default for ExecutionData {
             risks: Vec::new(),
             issues: Vec::new(),
             reporting_periods: Vec::new(),
+            partner_organizations: Vec::new(),
         }
     }
 }
@@ -88,6 +92,14 @@ pub struct Person {
     pub linked_role_id: Uuid,
     pub actual_start_date: String,
     pub actual_end_date: Option<String>,
+    /// References `PartnerOrganization.id` (M-24). Deliberately separate
+    /// from the free-text `institution` above rather than replacing it —
+    /// `institution` stays as an always-available fallback for anyone who
+    /// hasn't set up a full Partner Organization record yet. See
+    /// `docs/partner-organizations-requirements.md` §3 for why this link
+    /// lives on `Person` rather than on `PersonnelRole`.
+    #[serde(default)]
+    pub partner_organization_id: Option<Uuid>,
 }
 
 /// One calendar project-month's reported/approved FTE-months for a person
@@ -313,6 +325,33 @@ pub struct IssueEntry {
     pub linked_risk_id: Option<Uuid>,
 }
 
+/// A Horizon Europe consortium beneficiary (M-24). Tracked entirely
+/// execution-side — see `docs/partner-organizations-requirements.md` §1 for
+/// why this is consortium *data tracking*, not a shared cross-organization
+/// workspace.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PartnerOrganization {
+    pub id: Uuid,
+    /// Required, unique within the project (case-insensitive) — BR-PO-02.
+    pub name: String,
+    pub short_name: Option<String>,
+    pub country: String,
+    /// EU Participant Identification Code, if known yet.
+    pub pic_number: Option<String>,
+    /// BR-PO-01: at most one `PartnerOrganization` may be `Coordinator`.
+    pub role: PartnerRole,
+    pub contact_name: Option<String>,
+    pub contact_email: Option<String>,
+    pub validation_status: PartnerValidationStatus,
+    pub grant_agreement_signed: bool,
+    /// GA-agreed budget share in EUR, user-entered — there's no per-partner
+    /// planned figure anywhere in the Budget App's own data model to derive
+    /// this from (see requirements doc §6). `None` until filled in.
+    #[serde(default, with = "rust_decimal::serde::str_option")]
+    pub planned_budget_share_eur: Option<Decimal>,
+    pub notes: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -334,6 +373,7 @@ mod tests {
         assert!(data.reporting_periods.is_empty());
         assert!(data.risks.is_empty());
         assert!(data.issues.is_empty());
+        assert!(data.partner_organizations.is_empty());
     }
 
     #[test]
@@ -352,5 +392,48 @@ mod tests {
         let json = r#"{"schema_version":"1.0"}"#;
         let data: ExecutionData = serde_json::from_str(json).unwrap();
         assert_eq!(data, ExecutionData::default());
+    }
+
+    #[test]
+    fn test_person_json_without_partner_organization_id_still_deserialises() {
+        // A Person saved before M-24 existed never had this field at all --
+        // confirms #[serde(default)] loads it as None rather than failing.
+        let json = r#"{
+            "id": "11111111-1111-4111-8111-111111111111",
+            "full_name": "Ada Lovelace",
+            "email": null,
+            "institution": null,
+            "orcid": null,
+            "linked_role_id": "22222222-2222-4222-8222-222222222222",
+            "actual_start_date": "2026-01-01",
+            "actual_end_date": null
+        }"#;
+        let person: Person = serde_json::from_str(json).unwrap();
+        assert_eq!(person.partner_organization_id, None);
+    }
+
+    #[test]
+    fn test_partner_organization_roundtrip() {
+        use super::super::enums::{PartnerRole, PartnerValidationStatus};
+        use rust_decimal_macros::dec;
+
+        let partner = PartnerOrganization {
+            id: Uuid::new_v4(),
+            name: "KTH Royal Institute of Technology".to_string(),
+            short_name: Some("KTH".to_string()),
+            country: "Sweden".to_string(),
+            pic_number: Some("999977980".to_string()),
+            role: PartnerRole::Beneficiary,
+            contact_name: Some("Prof. Marcus Lindberg".to_string()),
+            contact_email: Some("marcus@kth.se".to_string()),
+            validation_status: PartnerValidationStatus::Validated,
+            grant_agreement_signed: true,
+            planned_budget_share_eur: Some(dec!(450000)),
+            notes: None,
+        };
+
+        let json = serde_json::to_string(&partner).unwrap();
+        let reloaded: PartnerOrganization = serde_json::from_str(&json).unwrap();
+        assert_eq!(partner, reloaded);
     }
 }

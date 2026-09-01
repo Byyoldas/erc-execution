@@ -224,6 +224,7 @@ mod tests {
             linked_role_id: uuid::Uuid::new_v4(),
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         });
         exec.person_month_records.push(PersonMonthRecord {
             id: uuid::Uuid::new_v4(),

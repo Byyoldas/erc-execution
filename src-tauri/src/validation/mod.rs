@@ -1012,6 +1012,7 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
         let dto = PersonInputDto {
             full_name: "Ada Lovelace".to_string(),
@@ -1039,6 +1040,7 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
         let dto = PersonInputDto {
             full_name: "Ada Lovelace (updated)".to_string(),
@@ -1143,6 +1145,7 @@ mod tests {
             linked_role_id: Uuid::new_v4(),
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         }];
         assert!(validate_person_month_record(&dto, &persons, dec!(1), dec!(0)).is_ok());
     }
@@ -1187,6 +1190,7 @@ mod tests {
             linked_role_id: Uuid::new_v4(),
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         }];
         // 0.5 + 0.6 = 1.1 == 1.10 tolerance boundary, not exceeding.
         assert!(validate_person_month_record(&dto, &persons, dec!(1), dec!(0.5)).is_ok());
@@ -1399,6 +1403,7 @@ mod tests {
             linked_role_id: Uuid::new_v4(),
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         }
     }
 

@@ -157,3 +157,23 @@ pub enum NavigationTarget {
     RiskRegister,
     IssueLog,
 }
+
+/// M-24 partner role within the consortium. BR-PO-01: at most one
+/// `PartnerOrganization` may be `Coordinator` at a time — see
+/// `validation::validate_partner_organization`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PartnerRole {
+    Coordinator,
+    Beneficiary,
+    AssociatedPartner,
+}
+
+/// M-24 consortium-agreement validation status, self-declared (the app has
+/// no EU Participant Register integration — same "self-declared, advisory"
+/// precedent as `Deliverable.cordis_registered`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PartnerValidationStatus {
+    NotStarted,
+    Pending,
+    Validated,
+}

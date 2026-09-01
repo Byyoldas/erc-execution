@@ -703,6 +703,7 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         });
         let actuals = empty_actuals();
         let ctx = base_ctx(&project, &exec, &actuals);

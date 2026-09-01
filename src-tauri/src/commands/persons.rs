@@ -40,6 +40,9 @@ pub fn add_person(
         linked_role_id: input.linked_role_id,
         actual_start_date: input.actual_start_date,
         actual_end_date: input.actual_end_date,
+        // Wired up to PersonInputDto in M-24 step 4 (commands + DTOs) --
+        // not yet reachable from the frontend at this step.
+        partner_organization_id: None,
     });
 
     let summary = build_summary(project, exec, &state)?;
