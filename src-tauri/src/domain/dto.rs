@@ -8,8 +8,8 @@
 
 use super::enums::{
     AmendmentStatus, AmendmentType, DeliverableStatus, DeliverableType, DisseminationLevel,
-    EntryStatus, IssueStatus, Level, MilestoneStatus, NavigationTarget, ReportingPeriodStatus,
-    RiskStatus, WarningSeverity, WpStatus,
+    EntryStatus, IssueStatus, Level, MilestoneStatus, NavigationTarget, PartnerRole,
+    PartnerValidationStatus, ReportingPeriodStatus, RiskStatus, WarningSeverity, WpStatus,
 };
 use erc_core::domain::dto::{BudgetSummaryDto, CfsStatus};
 use erc_core::domain::entities::RoleType;
@@ -562,4 +562,27 @@ pub struct WarningDto {
     pub message: String,
     pub navigation_target: NavigationTarget,
     pub entity_id: Option<Uuid>,
+}
+
+// ─── M-24: Partner Organization Management ───────────────────────────────────────
+
+/// `PartnerOrganizationDetailDto` and the `ExecutionProjectSummaryDto`/
+/// `PersonInputDto`/`PersonDetailDto` wiring land in step 4 (see
+/// `docs/partner-organizations-requirements.md` §11) once the consortium
+/// engine (step 3) exists to compute the derived fields a detail view needs
+/// (`actual_personnel_cost_eur`, `linked_person_count`, `over_budget_warning`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PartnerOrganizationInputDto {
+    pub name: String,
+    pub short_name: Option<String>,
+    pub country: String,
+    pub pic_number: Option<String>,
+    pub role: PartnerRole,
+    pub contact_name: Option<String>,
+    pub contact_email: Option<String>,
+    pub validation_status: PartnerValidationStatus,
+    pub grant_agreement_signed: bool,
+    #[serde(default, with = "rust_decimal::serde::str_option")]
+    pub planned_budget_share_eur: Option<Decimal>,
+    pub notes: Option<String>,
 }

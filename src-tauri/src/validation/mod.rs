@@ -5,13 +5,16 @@
 
 use crate::domain::dto::{
     ActualCostEntryInputDto, AmendmentInputDto, DeliverableInputDto, EquipmentProcurementInputDto,
-    IssueEntryInputDto, MilestoneInputDto, PersonInputDto, PersonMonthRecordInputDto,
-    ReportingPeriodInputDto, RiskEntryInputDto, SubcontractingLineInputDto, TripExecutionInputDto,
-    WorkPackageExecutionInputDto,
+    IssueEntryInputDto, MilestoneInputDto, PartnerOrganizationInputDto, PersonInputDto,
+    PersonMonthRecordInputDto, ReportingPeriodInputDto, RiskEntryInputDto,
+    SubcontractingLineInputDto, TripExecutionInputDto, WorkPackageExecutionInputDto,
 };
-use crate::domain::enums::{DeliverableStatus, IssueStatus, Level, MilestoneStatus, RiskStatus};
+use crate::domain::enums::{
+    DeliverableStatus, IssueStatus, Level, MilestoneStatus, PartnerRole, RiskStatus,
+};
 use crate::domain::execution_entities::{
-    Deliverable, Person, ReportingPeriod, RiskEntry, SubcontractingLine, TripExecution,
+    Deliverable, PartnerOrganization, Person, ReportingPeriod, RiskEntry, SubcontractingLine,
+    TripExecution,
 };
 use crate::engines::risk_engine::{derive_risk_priority, risk_score};
 use crate::error::{AppError, FieldError, ValidationErrors};
@@ -928,6 +931,125 @@ pub fn validate_issue_entry(
         ));
     }
 
+    errors.into_result()
+}
+
+// ─── M-24: Partner Organization Management ───────────────────────────────────────
+
+/// BR-PO-01/02 for creating or updating a `PartnerOrganization`. BR-PO-04
+/// (`Person.partner_organization_id`, if set, must reference an existing
+/// partner) is validated as part of `validate_person` once `PersonInputDto`
+/// carries that field (M-24 step 4) — there's nothing to check on the
+/// partner side of that link.
+///
+/// # Arguments
+/// * `exclude_id` — the partner's own id, when validating an update
+///   (excluded from the BR-PO-01/02 uniqueness checks) — same pattern as
+///   `validate_person`'s `exclude_id`.
+// Not yet called outside tests -- wired up to commands::partner_organizations
+// in M-24 step 4. Remove this allow once that lands.
+#[allow(dead_code)]
+pub fn validate_partner_organization(
+    dto: &PartnerOrganizationInputDto,
+    existing: &[PartnerOrganization],
+    exclude_id: Option<Uuid>,
+) -> Result<(), AppError> {
+    let mut errors = ValidationErrors::default();
+
+    if dto.name.trim().is_empty() {
+        errors.push(FieldError::new("name", "REQUIRED", "Name is required."));
+    } else {
+        // BR-PO-02: unique within the project, case-insensitive.
+        let name_taken = existing.iter().any(|p| {
+            let same_name = p.name.eq_ignore_ascii_case(dto.name.trim());
+            let is_self = exclude_id.map(|id| p.id == id).unwrap_or(false);
+            same_name && !is_self
+        });
+        if name_taken {
+            errors.push(FieldError::new(
+                "name",
+                "DUPLICATE_NAME",
+                "A partner organization with this name already exists.",
+            ));
+        }
+    }
+
+    if dto.country.trim().is_empty() {
+        errors.push(FieldError::new(
+            "country",
+            "REQUIRED",
+            "Country is required.",
+        ));
+    }
+
+    // BR-PO-01: at most one Coordinator at a time.
+    if dto.role == PartnerRole::Coordinator {
+        let coordinator_exists = existing.iter().any(|p| {
+            let is_self = exclude_id.map(|id| p.id == id).unwrap_or(false);
+            p.role == PartnerRole::Coordinator && !is_self
+        });
+        if coordinator_exists {
+            errors.push(FieldError::new(
+                "role",
+                "COORDINATOR_ALREADY_ASSIGNED",
+                "Another partner is already marked as Coordinator.",
+            ));
+        }
+    }
+
+    if let Some(email) = &dto.contact_email {
+        if !email.trim().is_empty() && !email.contains('@') {
+            errors.push(FieldError::new(
+                "contact_email",
+                "INVALID_EMAIL",
+                "Contact email must be a valid email address.",
+            ));
+        }
+    }
+
+    if let Some(share) = dto.planned_budget_share_eur {
+        if share < Decimal::ZERO {
+            errors.push(FieldError::new(
+                "planned_budget_share_eur",
+                "NEGATIVE_AMOUNT",
+                "Planned budget share cannot be negative.",
+            ));
+        }
+    }
+
+    errors.into_result()
+}
+
+/// BR-PO-03: a `PartnerOrganization` cannot be deleted while any `Person`
+/// still links to it. Returns the linked people's names in the error
+/// message so the caller can show exactly who needs reassigning first,
+/// rather than a bare rejection.
+// Not yet called outside tests -- wired up to commands::partner_organizations
+// in M-24 step 4. Remove this allow once that lands.
+#[allow(dead_code)]
+pub fn validate_partner_organization_deletion(
+    partner_id: Uuid,
+    persons: &[Person],
+) -> Result<(), AppError> {
+    let linked: Vec<&str> = persons
+        .iter()
+        .filter(|p| p.partner_organization_id == Some(partner_id))
+        .map(|p| p.full_name.as_str())
+        .collect();
+
+    if linked.is_empty() {
+        return Ok(());
+    }
+
+    let mut errors = ValidationErrors::default();
+    errors.push(FieldError::new(
+        "id",
+        "PARTNER_HAS_LINKED_PERSONS",
+        format!(
+            "Cannot delete: still linked to {}. Reassign or clear their partner organization first.",
+            linked.join(", ")
+        ),
+    ));
     errors.into_result()
 }
 
@@ -2069,5 +2191,165 @@ mod tests {
         dto.status = IssueStatus::Closed;
         dto.resolution = Some("Delivery rescheduled and confirmed.".to_string());
         assert!(validate_issue_entry(&dto, &[], 3, &[], today()).is_ok());
+    }
+
+    // ─── M-24: Partner Organization Management ───────────────────────────
+
+    fn partner_dto() -> PartnerOrganizationInputDto {
+        PartnerOrganizationInputDto {
+            name: "KTH Royal Institute of Technology".to_string(),
+            short_name: Some("KTH".to_string()),
+            country: "Sweden".to_string(),
+            pic_number: None,
+            role: crate::domain::enums::PartnerRole::Beneficiary,
+            contact_name: None,
+            contact_email: None,
+            validation_status: crate::domain::enums::PartnerValidationStatus::NotStarted,
+            grant_agreement_signed: false,
+            planned_budget_share_eur: None,
+            notes: None,
+        }
+    }
+
+    fn make_partner(id: Uuid, name: &str, role: PartnerRole) -> PartnerOrganization {
+        PartnerOrganization {
+            id,
+            name: name.to_string(),
+            short_name: None,
+            country: "Sweden".to_string(),
+            pic_number: None,
+            role,
+            contact_name: None,
+            contact_email: None,
+            validation_status: crate::domain::enums::PartnerValidationStatus::NotStarted,
+            grant_agreement_signed: false,
+            planned_budget_share_eur: None,
+            notes: None,
+        }
+    }
+
+    #[test]
+    fn test_val_po_valid() {
+        assert!(validate_partner_organization(&partner_dto(), &[], None).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_empty_name_returns_error() {
+        let mut dto = partner_dto();
+        dto.name = "  ".to_string();
+        assert!(validate_partner_organization(&dto, &[], None).is_err());
+    }
+
+    #[test]
+    fn test_val_po_empty_country_returns_error() {
+        let mut dto = partner_dto();
+        dto.country = "".to_string();
+        assert!(validate_partner_organization(&dto, &[], None).is_err());
+    }
+
+    #[test]
+    fn test_val_po_duplicate_name_returns_error() {
+        let existing = make_partner(
+            Uuid::new_v4(),
+            "KTH Royal Institute of Technology",
+            PartnerRole::Beneficiary,
+        );
+        assert!(validate_partner_organization(&partner_dto(), &[existing], None).is_err());
+    }
+
+    #[test]
+    fn test_val_po_duplicate_name_is_case_insensitive() {
+        let existing = make_partner(
+            Uuid::new_v4(),
+            "kth royal institute of technology",
+            PartnerRole::Beneficiary,
+        );
+        assert!(validate_partner_organization(&partner_dto(), &[existing], None).is_err());
+    }
+
+    #[test]
+    fn test_val_po_update_excludes_self_from_duplicate_name_check() {
+        let self_id = Uuid::new_v4();
+        let existing = make_partner(
+            self_id,
+            "KTH Royal Institute of Technology",
+            PartnerRole::Beneficiary,
+        );
+        assert!(validate_partner_organization(&partner_dto(), &[existing], Some(self_id)).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_second_coordinator_returns_error() {
+        let existing = make_partner(
+            Uuid::new_v4(),
+            "Coordinating University",
+            PartnerRole::Coordinator,
+        );
+        let mut dto = partner_dto();
+        dto.role = PartnerRole::Coordinator;
+        assert!(validate_partner_organization(&dto, &[existing], None).is_err());
+    }
+
+    #[test]
+    fn test_val_po_first_coordinator_is_ok() {
+        let mut dto = partner_dto();
+        dto.role = PartnerRole::Coordinator;
+        assert!(validate_partner_organization(&dto, &[], None).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_update_excludes_self_from_coordinator_check() {
+        let self_id = Uuid::new_v4();
+        let existing = make_partner(
+            self_id,
+            "KTH Royal Institute of Technology",
+            PartnerRole::Coordinator,
+        );
+        let mut dto = partner_dto();
+        dto.role = PartnerRole::Coordinator;
+        assert!(validate_partner_organization(&dto, &[existing], Some(self_id)).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_invalid_email_returns_error() {
+        let mut dto = partner_dto();
+        dto.contact_email = Some("not-an-email".to_string());
+        assert!(validate_partner_organization(&dto, &[], None).is_err());
+    }
+
+    #[test]
+    fn test_val_po_valid_email_is_ok() {
+        let mut dto = partner_dto();
+        dto.contact_email = Some("marcus@kth.se".to_string());
+        assert!(validate_partner_organization(&dto, &[], None).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_negative_budget_share_returns_error() {
+        let mut dto = partner_dto();
+        dto.planned_budget_share_eur = Some(dec!(-1));
+        assert!(validate_partner_organization(&dto, &[], None).is_err());
+    }
+
+    #[test]
+    fn test_val_po_deletion_blocked_when_person_linked() {
+        let partner_id = Uuid::new_v4();
+        let person = make_person(Uuid::new_v4());
+        let mut person = person;
+        person.partner_organization_id = Some(partner_id);
+        assert!(validate_partner_organization_deletion(partner_id, &[person]).is_err());
+    }
+
+    #[test]
+    fn test_val_po_deletion_allowed_when_no_person_linked() {
+        let partner_id = Uuid::new_v4();
+        let mut person = make_person(Uuid::new_v4());
+        person.partner_organization_id = Some(Uuid::new_v4()); // a different partner
+        assert!(validate_partner_organization_deletion(partner_id, &[person]).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_deletion_allowed_when_no_persons_at_all() {
+        assert!(validate_partner_organization_deletion(Uuid::new_v4(), &[]).is_ok());
     }
 }
