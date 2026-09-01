@@ -28,7 +28,9 @@ fn parse_iso_date(s: &str) -> Option<chrono::NaiveDate> {
 
 // ─── M-03: Personnel & Person-Month Tracking ──────────────────────────────────
 
-/// BR-PM-01/06 and required-field checks for a `Person`.
+/// BR-PM-01/06 and required-field checks for a `Person`, plus BR-PO-04
+/// (M-24: `partner_organization_id`, if set, must reference an existing
+/// `PartnerOrganization`).
 ///
 /// # Arguments
 /// * `exclude_id` — the person's own id, when validating an update (excluded
@@ -41,6 +43,7 @@ pub fn validate_person(
     dto: &PersonInputDto,
     existing_persons: &[Person],
     roles: &[PersonnelRole],
+    partners: &[PartnerOrganization],
     exclude_id: Option<Uuid>,
     call_opening_date: Option<&str>,
 ) -> Result<(), AppError> {
@@ -108,6 +111,17 @@ pub fn validate_person(
                 "actual_end_date",
                 "INVALID_DATE",
                 "Actual end date must be a valid date (YYYY-MM-DD).",
+            ));
+        }
+    }
+
+    // BR-PO-04 (M-24): if set, must reference an existing partner.
+    if let Some(partner_id) = dto.partner_organization_id {
+        if !partners.iter().any(|p| p.id == partner_id) {
+            errors.push(FieldError::new(
+                "partner_organization_id",
+                "NOT_FOUND",
+                "Partner organization does not exist in this project.",
             ));
         }
     }
@@ -946,9 +960,6 @@ pub fn validate_issue_entry(
 /// * `exclude_id` — the partner's own id, when validating an update
 ///   (excluded from the BR-PO-01/02 uniqueness checks) — same pattern as
 ///   `validate_person`'s `exclude_id`.
-// Not yet called outside tests -- wired up to commands::partner_organizations
-// in M-24 step 4. Remove this allow once that lands.
-#[allow(dead_code)]
 pub fn validate_partner_organization(
     dto: &PartnerOrganizationInputDto,
     existing: &[PartnerOrganization],
@@ -1024,9 +1035,6 @@ pub fn validate_partner_organization(
 /// still links to it. Returns the linked people's names in the error
 /// message so the caller can show exactly who needs reassigning first,
 /// rather than a bare rejection.
-// Not yet called outside tests -- wired up to commands::partner_organizations
-// in M-24 step 4. Remove this allow once that lands.
-#[allow(dead_code)]
 pub fn validate_partner_organization_deletion(
     partner_id: Uuid,
     persons: &[Person],
@@ -1087,8 +1095,58 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
-        assert!(validate_person(&dto, &[], &roles, None, None).is_ok());
+        assert!(validate_person(&dto, &[], &roles, &[], None, None).is_ok());
+    }
+
+    #[test]
+    fn test_val_person_unknown_partner_returns_error() {
+        let role_id = Uuid::new_v4();
+        let roles = vec![make_role(role_id, 1, 12)];
+        let dto = PersonInputDto {
+            full_name: "Ada Lovelace".to_string(),
+            email: None,
+            institution: None,
+            orcid: None,
+            linked_role_id: role_id,
+            actual_start_date: "2026-01-01".to_string(),
+            actual_end_date: None,
+            partner_organization_id: Some(Uuid::new_v4()),
+        };
+        assert!(validate_person(&dto, &[], &roles, &[], None, None).is_err());
+    }
+
+    #[test]
+    fn test_val_person_known_partner_is_ok() {
+        let role_id = Uuid::new_v4();
+        let roles = vec![make_role(role_id, 1, 12)];
+        let partner_id = Uuid::new_v4();
+        let partners = vec![PartnerOrganization {
+            id: partner_id,
+            name: "KTH".to_string(),
+            short_name: None,
+            country: "Sweden".to_string(),
+            pic_number: None,
+            role: PartnerRole::Beneficiary,
+            contact_name: None,
+            contact_email: None,
+            validation_status: crate::domain::enums::PartnerValidationStatus::NotStarted,
+            grant_agreement_signed: false,
+            planned_budget_share_eur: None,
+            notes: None,
+        }];
+        let dto = PersonInputDto {
+            full_name: "Ada Lovelace".to_string(),
+            email: None,
+            institution: None,
+            orcid: None,
+            linked_role_id: role_id,
+            actual_start_date: "2026-01-01".to_string(),
+            actual_end_date: None,
+            partner_organization_id: Some(partner_id),
+        };
+        assert!(validate_person(&dto, &[], &roles, &partners, None, None).is_ok());
     }
 
     #[test]
@@ -1103,8 +1161,9 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
-        assert!(validate_person(&dto, &[], &roles, None, None).is_err());
+        assert!(validate_person(&dto, &[], &roles, &[], None, None).is_err());
     }
 
     #[test]
@@ -1117,8 +1176,9 @@ mod tests {
             linked_role_id: Uuid::new_v4(),
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
-        assert!(validate_person(&dto, &[], &[], None, None).is_err());
+        assert!(validate_person(&dto, &[], &[], &[], None, None).is_err());
     }
 
     #[test]
@@ -1144,8 +1204,9 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
-        assert!(validate_person(&dto, &[existing], &roles, None, None).is_err());
+        assert!(validate_person(&dto, &[existing], &roles, &[], None, None).is_err());
     }
 
     #[test]
@@ -1172,8 +1233,9 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-01-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
-        assert!(validate_person(&dto, &[existing], &roles, Some(self_id), None).is_ok());
+        assert!(validate_person(&dto, &[existing], &roles, &[], Some(self_id), None).is_ok());
     }
 
     #[test]
@@ -1188,8 +1250,9 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "not-a-date".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
-        assert!(validate_person(&dto, &[], &roles, None, None).is_err());
+        assert!(validate_person(&dto, &[], &roles, &[], None, None).is_err());
     }
 
     #[test]
@@ -1205,8 +1268,9 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-02-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
-        assert!(validate_person(&dto, &[], &roles, None, Some("2026-01-01")).is_err());
+        assert!(validate_person(&dto, &[], &roles, &[], None, Some("2026-01-01")).is_err());
     }
 
     #[test]
@@ -1221,9 +1285,10 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-01-15".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
         // Role starts at project month 2 == 2026-02-01; actual start is earlier.
-        assert!(validate_person(&dto, &[], &roles, None, Some("2026-01-01")).is_ok());
+        assert!(validate_person(&dto, &[], &roles, &[], None, Some("2026-01-01")).is_ok());
     }
 
     #[test]
@@ -1238,8 +1303,9 @@ mod tests {
             linked_role_id: role_id,
             actual_start_date: "2026-06-01".to_string(),
             actual_end_date: None,
+            partner_organization_id: None,
         };
-        assert!(validate_person(&dto, &[], &roles, None, None).is_ok());
+        assert!(validate_person(&dto, &[], &roles, &[], None, None).is_ok());
     }
 
     // ─── validate_person_month_record ──────────────────────────────────

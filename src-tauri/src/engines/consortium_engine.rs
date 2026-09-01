@@ -15,9 +15,6 @@ use uuid::Uuid;
 /// duplicated here — `person_months` is the exact same list
 /// `commands::project::build_summary` already produces for the Personnel
 /// screen; this is pure aggregation over data that already exists.
-// Not yet called outside tests -- wired into build_summary in M-24 step 4.
-// Remove this allow once that lands.
-#[allow(dead_code)]
 pub fn calculate_partner_actual_personnel_eur(
     persons: &[Person],
     person_months: &[PersonMonthDetailDto],

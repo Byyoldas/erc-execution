@@ -6,15 +6,16 @@
 use crate::domain::dto::{
     ActualCostEntryDetailDto, AmendmentDetailDto, DeliverableDetailDto,
     EquipmentProcurementDetailDto, ExecutionProjectSummaryDto, IssueEntryDetailDto,
-    MilestoneDetailDto, PersonDetailDto, PersonMonthDetailDto, PersonnelRoleSummaryDto,
-    PlannedEquipmentSummaryDto, PlannedOtherCostSummaryDto, PlannedTripSummaryDto, ProjectInfoDto,
-    ReportingPeriodDetailDto, RiskEntryDetailDto, SubcontractingLineDetailDto,
-    TripExecutionDetailDto, WorkPackageExecutionDetailDto,
+    MilestoneDetailDto, PartnerOrganizationDetailDto, PersonDetailDto, PersonMonthDetailDto,
+    PersonnelRoleSummaryDto, PlannedEquipmentSummaryDto, PlannedOtherCostSummaryDto,
+    PlannedTripSummaryDto, ProjectInfoDto, ReportingPeriodDetailDto, RiskEntryDetailDto,
+    SubcontractingLineDetailDto, TripExecutionDetailDto, WorkPackageExecutionDetailDto,
 };
 use crate::domain::execution_entities::ExecutionData;
 use crate::engines::notification_engine::WarningContext;
 use crate::engines::{
-    financial_engine, notification_engine, progress_engine, reporting_period_engine, risk_engine,
+    consortium_engine, financial_engine, notification_engine, progress_engine,
+    reporting_period_engine, risk_engine,
 };
 use crate::error::AppError;
 use crate::persistence;
@@ -34,6 +35,8 @@ const EQUIPMENT_OVERSPEND_MULTIPLIER: Decimal = Decimal::from_parts(110, 0, 0, f
 const OTHER_COST_OVERSPEND_MULTIPLIER: Decimal = Decimal::from_parts(110, 0, 0, false, 2);
 /// BR-SC-03's competitive-tendering advisory threshold (€200,000).
 const SUBCONTRACTING_TENDER_THRESHOLD_EUR: Decimal = Decimal::from_parts(200_000, 0, 0, false, 0);
+/// BR-PO-06's overspend tolerance multiplier (1.10 = 10%).
+const PARTNER_OVERSPEND_MULTIPLIER: Decimal = Decimal::from_parts(110, 0, 0, false, 2);
 
 pub(crate) fn build_summary(
     project: &Project,
@@ -63,6 +66,12 @@ pub(crate) fn build_summary(
                 .find(|r| r.id == p.linked_role_id)
                 .map(|r| r.role_label.clone())
                 .unwrap_or_else(|| "Unknown role".to_string());
+            let partner_organization_name = p.partner_organization_id.and_then(|partner_id| {
+                exec.partner_organizations
+                    .iter()
+                    .find(|partner| partner.id == partner_id)
+                    .map(|partner| partner.name.clone())
+            });
             PersonDetailDto {
                 id: p.id,
                 full_name: p.full_name.clone(),
@@ -73,6 +82,8 @@ pub(crate) fn build_summary(
                 linked_role_label: role_label,
                 actual_start_date: p.actual_start_date.clone(),
                 actual_end_date: p.actual_end_date.clone(),
+                partner_organization_id: p.partner_organization_id,
+                partner_organization_name,
             }
         })
         .collect();
@@ -110,6 +121,46 @@ pub(crate) fn build_summary(
                 salary_cost_estimate_eur: estimate,
                 calendar_year,
                 calendar_month,
+            }
+        })
+        .collect();
+
+    let partner_actual_personnel =
+        consortium_engine::calculate_partner_actual_personnel_eur(&exec.persons, &person_months);
+
+    let partner_organizations: Vec<PartnerOrganizationDetailDto> = exec
+        .partner_organizations
+        .iter()
+        .map(|partner| {
+            let actual_personnel_cost_eur = partner_actual_personnel
+                .get(&partner.id)
+                .copied()
+                .unwrap_or(Decimal::ZERO);
+            let linked_person_count = exec
+                .persons
+                .iter()
+                .filter(|p| p.partner_organization_id == Some(partner.id))
+                .count() as u32;
+            let over_budget_warning = partner.planned_budget_share_eur.is_some_and(|planned| {
+                planned > Decimal::ZERO
+                    && actual_personnel_cost_eur > planned * PARTNER_OVERSPEND_MULTIPLIER
+            });
+            PartnerOrganizationDetailDto {
+                id: partner.id,
+                name: partner.name.clone(),
+                short_name: partner.short_name.clone(),
+                country: partner.country.clone(),
+                pic_number: partner.pic_number.clone(),
+                role: partner.role,
+                contact_name: partner.contact_name.clone(),
+                contact_email: partner.contact_email.clone(),
+                validation_status: partner.validation_status,
+                grant_agreement_signed: partner.grant_agreement_signed,
+                planned_budget_share_eur: partner.planned_budget_share_eur,
+                notes: partner.notes.clone(),
+                actual_personnel_cost_eur,
+                linked_person_count,
+                over_budget_warning,
             }
         })
         .collect();
@@ -544,6 +595,7 @@ pub(crate) fn build_summary(
         risks,
         issues,
         warnings,
+        partner_organizations,
     })
 }
 

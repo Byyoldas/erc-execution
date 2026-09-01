@@ -4,6 +4,7 @@ pub mod equipment;
 pub mod issues;
 pub mod milestones;
 pub mod other_costs;
+pub mod partner_organizations;
 pub mod person_months;
 pub mod persons;
 pub mod project;

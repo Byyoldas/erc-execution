@@ -27,6 +27,7 @@ pub fn add_person(
         &input,
         &exec.persons,
         &project.personnel_roles,
+        &exec.partner_organizations,
         None,
         project.config.call_opening_date.as_deref(),
     )?;
@@ -40,9 +41,7 @@ pub fn add_person(
         linked_role_id: input.linked_role_id,
         actual_start_date: input.actual_start_date,
         actual_end_date: input.actual_end_date,
-        // Wired up to PersonInputDto in M-24 step 4 (commands + DTOs) --
-        // not yet reachable from the frontend at this step.
-        partner_organization_id: None,
+        partner_organization_id: input.partner_organization_id,
     });
 
     let summary = build_summary(project, exec, &state)?;
@@ -68,6 +67,7 @@ pub fn update_person(
         &input,
         &exec.persons,
         &project.personnel_roles,
+        &exec.partner_organizations,
         Some(id),
         project.config.call_opening_date.as_deref(),
     )?;
@@ -84,6 +84,7 @@ pub fn update_person(
     person.linked_role_id = input.linked_role_id;
     person.actual_start_date = input.actual_start_date;
     person.actual_end_date = input.actual_end_date;
+    person.partner_organization_id = input.partner_organization_id;
 
     let summary = build_summary(project, exec, &state)?;
     if let Some(path) = state.project_path.lock().unwrap().as_deref() {

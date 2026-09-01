@@ -106,6 +106,10 @@ pub fn run() {
             commands::issues::add_issue_entry,
             commands::issues::update_issue_entry,
             commands::issues::delete_issue_entry,
+            // M-24: Partner Organization Management
+            commands::partner_organizations::add_partner_organization,
+            commands::partner_organizations::update_partner_organization,
+            commands::partner_organizations::delete_partner_organization,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

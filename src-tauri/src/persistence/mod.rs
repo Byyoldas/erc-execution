@@ -409,6 +409,48 @@ mod tests {
     }
 
     #[test]
+    fn test_save_and_load_roundtrip_preserves_m24_partner_organization_and_person_link() {
+        use crate::domain::enums::{PartnerRole, PartnerValidationStatus};
+        use crate::domain::execution_entities::{PartnerOrganization, Person};
+
+        let project = make_project();
+        let mut exec = ExecutionData::default();
+        let partner_id = uuid::Uuid::new_v4();
+        exec.partner_organizations.push(PartnerOrganization {
+            id: partner_id,
+            name: "KTH Royal Institute of Technology".to_string(),
+            short_name: Some("KTH".to_string()),
+            country: "Sweden".to_string(),
+            pic_number: Some("999977980".to_string()),
+            role: PartnerRole::Beneficiary,
+            contact_name: Some("Prof. Marcus Lindberg".to_string()),
+            contact_email: Some("marcus@kth.se".to_string()),
+            validation_status: PartnerValidationStatus::Validated,
+            grant_agreement_signed: true,
+            planned_budget_share_eur: Some(dec!(450000)),
+            notes: None,
+        });
+        exec.persons.push(Person {
+            id: uuid::Uuid::new_v4(),
+            full_name: "Ada Lovelace".to_string(),
+            email: None,
+            institution: None,
+            orcid: None,
+            linked_role_id: uuid::Uuid::new_v4(),
+            actual_start_date: "2026-01-01".to_string(),
+            actual_end_date: None,
+            partner_organization_id: Some(partner_id),
+        });
+
+        let path = temp_path("m24-partner-organization-roundtrip");
+        save_execution(&project, &exec, &path).unwrap();
+        let (_, reloaded_exec) = load_execution(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+
+        assert_eq!(exec, reloaded_exec);
+    }
+
+    #[test]
     fn test_save_writes_format_version_1_1() {
         let project = make_project();
         let exec = ExecutionData::default();
