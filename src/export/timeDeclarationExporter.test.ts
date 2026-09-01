@@ -26,6 +26,8 @@ const person: PersonDetailDto = {
   linked_role_label: 'PI Role',
   actual_start_date: '2026-01-01',
   actual_end_date: null,
+  partner_organization_id: null,
+  partner_organization_name: null,
 };
 
 function record(overrides: Partial<PersonMonthDetailDto>): PersonMonthDetailDto {

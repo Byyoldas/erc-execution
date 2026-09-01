@@ -82,6 +82,7 @@ function baseSummary(overrides: Partial<ExecutionProjectSummaryDto> = {}): Execu
     risks: [],
     issues: [],
     warnings: [],
+    partner_organizations: [],
     ...overrides,
   };
 }
@@ -271,6 +272,8 @@ describe('excelExporter', () => {
           linked_role_label: 'PostDoc-1',
           actual_start_date: '2026-01-01',
           actual_end_date: null,
+          partner_organization_id: null,
+          partner_organization_name: null,
         },
       ],
       person_months: [

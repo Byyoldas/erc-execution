@@ -16,6 +16,7 @@ const MODULES: { label: string; screen: ExecutionScreen | null }[] = [
   { label: 'Work Packages', screen: 'work-packages' },
   { label: 'Deliverables', screen: 'deliverables' },
   { label: 'Personnel', screen: 'personnel' },
+  { label: 'Partners', screen: 'partners' },
   { label: 'Milestones', screen: 'milestones' },
   { label: 'Amendments', screen: 'amendments' },
   { label: 'Travel', screen: 'travel' },

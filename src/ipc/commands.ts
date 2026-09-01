@@ -13,6 +13,7 @@ import type {
   ExecutionProjectSummaryDto,
   IssueEntryInputDto,
   MilestoneInputDto,
+  PartnerOrganizationInputDto,
   PersonInputDto,
   PersonMonthRecordInputDto,
   ReportingPeriodInputDto,
@@ -199,3 +200,17 @@ export const updateIssueEntry = (
 
 export const deleteIssueEntry = (id: string): Promise<ExecutionProjectSummaryDto> =>
   invoke('delete_issue_entry', { id });
+
+// ─── M-24: Partner Organization Management ───────────────────────────────────────
+
+export const addPartnerOrganization = (
+  input: PartnerOrganizationInputDto,
+): Promise<ExecutionProjectSummaryDto> => invoke('add_partner_organization', { input });
+
+export const updatePartnerOrganization = (
+  id: string,
+  input: PartnerOrganizationInputDto,
+): Promise<ExecutionProjectSummaryDto> => invoke('update_partner_organization', { id, input });
+
+export const deletePartnerOrganization = (id: string): Promise<ExecutionProjectSummaryDto> =>
+  invoke('delete_partner_organization', { id });

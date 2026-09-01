@@ -62,6 +62,7 @@ export interface PersonInputDto {
   linked_role_id: string;
   actual_start_date: string;
   actual_end_date: string | null;
+  partner_organization_id: string | null;
 }
 
 export interface PersonDetailDto {
@@ -74,6 +75,8 @@ export interface PersonDetailDto {
   linked_role_label: string;
   actual_start_date: string;
   actual_end_date: string | null;
+  partner_organization_id: string | null;
+  partner_organization_name: string | null;
 }
 
 export interface PersonMonthRecordInputDto {
@@ -401,6 +404,7 @@ export interface ExecutionProjectSummaryDto {
   risks: RiskEntryDetailDto[];
   issues: IssueEntryDetailDto[];
   warnings: WarningDto[];
+  partner_organizations: PartnerOrganizationDetailDto[];
 }
 
 // ─── M-12: Risk Register ────────────────────────────────────────────────────────
@@ -509,4 +513,43 @@ export type ExecutionScreen =
   | 'reporting-periods'
   | 'risk-register'
   | 'issue-log'
-  | 'reports-export';
+  | 'reports-export'
+  | 'partners';
+
+// ─── M-24: Partner Organization Management ───────────────────────────────────────
+
+export type PartnerRole = 'Coordinator' | 'Beneficiary' | 'AssociatedPartner';
+
+export type PartnerValidationStatus = 'NotStarted' | 'Pending' | 'Validated';
+
+export interface PartnerOrganizationInputDto {
+  name: string;
+  short_name: string | null;
+  country: string;
+  pic_number: string | null;
+  role: PartnerRole;
+  contact_name: string | null;
+  contact_email: string | null;
+  validation_status: PartnerValidationStatus;
+  grant_agreement_signed: boolean;
+  planned_budget_share_eur: string | null;
+  notes: string | null;
+}
+
+export interface PartnerOrganizationDetailDto {
+  id: string;
+  name: string;
+  short_name: string | null;
+  country: string;
+  pic_number: string | null;
+  role: PartnerRole;
+  contact_name: string | null;
+  contact_email: string | null;
+  validation_status: PartnerValidationStatus;
+  grant_agreement_signed: boolean;
+  planned_budget_share_eur: string | null;
+  notes: string | null;
+  actual_personnel_cost_eur: string;
+  linked_person_count: number;
+  over_budget_warning: boolean;
+}

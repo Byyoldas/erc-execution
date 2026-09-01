@@ -19,6 +19,7 @@ const emptyPerson: PersonInputDto = {
   linked_role_id: '',
   actual_start_date: '',
   actual_end_date: null,
+  partner_organization_id: null,
 };
 
 const emptyRecord: PersonMonthRecordInputDto = {
@@ -36,7 +37,7 @@ export function Personnel() {
   const [exportError, setExportError] = useState<string | null>(null);
 
   if (!summary) return null;
-  const { personnel_roles, persons, person_months } = summary;
+  const { personnel_roles, persons, person_months, partner_organizations } = summary;
 
   const submitPerson = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +73,7 @@ export function Personnel() {
             <tr>
               <th>Name</th>
               <th>Linked Role</th>
+              <th>Partner</th>
               <th>Start</th>
               <th>End</th>
               <th />
@@ -82,6 +84,7 @@ export function Personnel() {
               <tr key={p.id}>
                 <td>{p.full_name}</td>
                 <td>{p.linked_role_label}</td>
+                <td>{p.partner_organization_name ?? '—'}</td>
                 <td>{p.actual_start_date}</td>
                 <td>{p.actual_end_date ?? '—'}</td>
                 <td>
@@ -113,6 +116,19 @@ export function Personnel() {
             {personnel_roles.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.role_label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={personForm.partner_organization_id ?? ''}
+            onChange={(e) =>
+              setPersonForm({ ...personForm, partner_organization_id: e.target.value || null })
+            }
+          >
+            <option value="">No partner organization</option>
+            {partner_organizations.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.short_name ?? p.name}
               </option>
             ))}
           </select>

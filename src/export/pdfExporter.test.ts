@@ -69,6 +69,7 @@ function baseSummary(overrides: Partial<ExecutionProjectSummaryDto> = {}): Execu
     risks: [],
     issues: [],
     warnings: [],
+    partner_organizations: [],
     ...overrides,
   };
 }

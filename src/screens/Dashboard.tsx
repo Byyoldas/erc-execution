@@ -20,7 +20,8 @@ export function Dashboard() {
 
   if (!summary) return null;
 
-  const { project_info, planned, actuals, current_project_month } = summary;
+  const { project_info, planned, actuals, current_project_month, partner_organizations } = summary;
+  const validatedCount = partner_organizations.filter((p) => p.validation_status === 'Validated').length;
   const timeElapsedPct =
     project_info.duration_years > 0
       ? Math.round((current_project_month / (project_info.duration_years * 12)) * 100)
@@ -101,6 +102,36 @@ export function Dashboard() {
         </table>
         <p>CFS status (actual): {CFS_LABELS[actuals.cfs_status_actual] ?? actuals.cfs_status_actual}</p>
       </section>
+
+      {partner_organizations.length > 0 && (
+        <section className="budget-summary-panel">
+          <h2>Consortium</h2>
+          <p className="subtitle">
+            {partner_organizations.length} partner(s) · {validatedCount}/{partner_organizations.length}{' '}
+            validated
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Partner</th>
+                <th>Planned Share</th>
+                <th>Actual (personnel only)</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {partner_organizations.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.short_name ?? p.name}</td>
+                  <td>{p.planned_budget_share_eur ? fmtEur(p.planned_budget_share_eur) : '—'}</td>
+                  <td>{fmtEur(p.actual_personnel_cost_eur)}</td>
+                  <td>{p.over_budget_warning && <span className="warning-banner">&gt;10%</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { NotificationTray } from './components/NotificationTray';
 import { Welcome } from './screens/Welcome';
 import { Dashboard } from './screens/Dashboard';
 import { Personnel } from './screens/Personnel';
+import { Partners } from './screens/Partners';
 import { WorkPackages } from './screens/WorkPackages';
 import { Milestones } from './screens/Milestones';
 import { Deliverables } from './screens/Deliverables';
@@ -39,6 +40,8 @@ export function App() {
     switch (activeScreen) {
       case 'personnel':
         return <Personnel />;
+      case 'partners':
+        return <Partners />;
       case 'work-packages':
         return <WorkPackages />;
       case 'milestones':
