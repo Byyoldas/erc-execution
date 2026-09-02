@@ -11,12 +11,27 @@ import { useExecutionStore } from '../store/executionStore';
 import type { ExecutionScreen } from '../types';
 import { SaveButton } from './SaveButton';
 
+/**
+ * Ordered by data dependency, not by module number -- a screen never
+ * appears before something its own data can reference:
+ * - Partners before Personnel (Person.partner_organization_id)
+ * - Personnel before Travel (TripExecution.traveller_person_id)
+ * - Deliverables before Milestones (Milestone.linked_deliverable_ids)
+ * - Risk Register before Issue Log (IssueEntry.linked_risk_id)
+ * Work Packages, Equipment, Other Costs, Subcontracting, Reporting
+ * Periods, and Amendments only reference Budget App data (already
+ * available the moment a project opens, no execution-side screen visit
+ * required), so their relative position isn't dependency-constrained --
+ * Work Packages stays early since nearly every other screen's "Work
+ * Package" dropdown draws from it. Reports & Export is last, since it
+ * depends on everything.
+ */
 const MODULES: { label: string; screen: ExecutionScreen | null }[] = [
   { label: 'Dashboard', screen: 'dashboard' },
-  { label: 'Work Packages', screen: 'work-packages' },
-  { label: 'Deliverables', screen: 'deliverables' },
-  { label: 'Personnel', screen: 'personnel' },
   { label: 'Partners', screen: 'partners' },
+  { label: 'Work Packages', screen: 'work-packages' },
+  { label: 'Personnel', screen: 'personnel' },
+  { label: 'Deliverables', screen: 'deliverables' },
   { label: 'Milestones', screen: 'milestones' },
   { label: 'Amendments', screen: 'amendments' },
   { label: 'Travel', screen: 'travel' },
