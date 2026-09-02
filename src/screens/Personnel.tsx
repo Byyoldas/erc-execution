@@ -38,6 +38,7 @@ export function Personnel() {
 
   if (!summary) return null;
   const { personnel_roles, persons, person_months, partner_organizations } = summary;
+  const selectedRole = personnel_roles.find((r) => r.id === personForm.linked_role_id);
 
   const submitPerson = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +74,7 @@ export function Personnel() {
             <tr>
               <th>Name</th>
               <th>Linked Role</th>
+              <th>Role Period</th>
               <th>Partner</th>
               <th>Start</th>
               <th>End</th>
@@ -80,10 +82,13 @@ export function Personnel() {
             </tr>
           </thead>
           <tbody>
-            {persons.map((p) => (
+            {persons.map((p) => {
+              const role = personnel_roles.find((r) => r.id === p.linked_role_id);
+              return (
               <tr key={p.id}>
                 <td>{p.full_name}</td>
                 <td>{p.linked_role_label}</td>
+                <td>{role ? `Month ${role.start_month}–${role.end_month}` : '—'}</td>
                 <td>{p.partner_organization_name ?? '—'}</td>
                 <td>{p.actual_start_date}</td>
                 <td>{p.actual_end_date ?? '—'}</td>
@@ -96,7 +101,8 @@ export function Personnel() {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
 
@@ -115,10 +121,15 @@ export function Personnel() {
             <option value="">Link to role…</option>
             {personnel_roles.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.role_label}
+                {r.role_label} (Month {r.start_month}–{r.end_month})
               </option>
             ))}
           </select>
+          {selectedRole && (
+            <span className="subtitle">
+              Planned: Month {selectedRole.start_month}–{selectedRole.end_month}
+            </span>
+          )}
           <select
             value={personForm.partner_organization_id ?? ''}
             onChange={(e) =>

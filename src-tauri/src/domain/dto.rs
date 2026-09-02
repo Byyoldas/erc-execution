@@ -36,6 +36,12 @@ pub struct PersonnelRoleSummaryDto {
     pub id: Uuid,
     pub role_label: String,
     pub role_type: RoleType,
+    /// The role's planned working period, straight from `PersonnelRole` --
+    /// shown on the Personnel screen's "link to role" picker so adding a
+    /// person doesn't require switching back to the Budget App to check
+    /// which months a role was actually planned for.
+    pub start_month: u32,
+    pub end_month: u32,
 }
 
 /// The Execution App's master summary DTO, returned by every command that

@@ -30,6 +30,8 @@ export interface PersonnelRoleSummaryDto {
   id: string;
   role_label: string;
   role_type: RoleType;
+  start_month: number;
+  end_month: number;
 }
 
 export interface PlannedTripSummaryDto {

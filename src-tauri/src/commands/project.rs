@@ -53,6 +53,8 @@ pub(crate) fn build_summary(
             id: r.id,
             role_label: r.role_label.clone(),
             role_type: r.role_type.clone(),
+            start_month: r.start_month,
+            end_month: r.end_month,
         })
         .collect();
 
