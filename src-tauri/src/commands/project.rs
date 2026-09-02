@@ -574,6 +574,7 @@ pub(crate) fn build_summary(
             call_reference: project.config.call_reference.clone(),
             duration_years: project.config.duration_years,
             work_package_count: project.config.work_package_count,
+            call_opening_date: project.config.call_opening_date.clone(),
         },
         planned,
         current_project_month,

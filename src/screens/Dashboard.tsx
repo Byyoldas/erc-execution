@@ -36,6 +36,16 @@ export function Dashboard() {
           {project_info.duration_years} year(s) · {project_info.work_package_count} WPs · Month{' '}
           {current_project_month} ({timeElapsedPct}% elapsed)
         </p>
+        <p className="subtitle">
+          {project_info.call_opening_date ? (
+            <>Call opened: {project_info.call_opening_date}</>
+          ) : (
+            <>
+              Call opening date not set — set it in ERC Budget to enable real
+              Month/calendar tracking (currently defaulting to Month 1).
+            </>
+          )}
+        </p>
       </header>
 
       <section className="budget-summary-panel">

@@ -61,7 +61,10 @@ The landing screen after opening a project. Shows:
 - **Project header** — title, PI, call reference, duration, and how far
   into the project you currently are (current month, computed from the
   budget's call opening date; defaults to month 1 if that date was never
-  set in the Budget App).
+  set in the Budget App). Right below it, either "Call opened: &lt;date&gt;"
+  or, if it was never set, a note pointing you to set it in ERC Budget —
+  this app only ever reads that date, never edits it, same as every other
+  piece of planned Budget App data.
 - **Planned vs. Actual** — every ERC budget category (A Personnel, B
   Subcontracting, C1 Travel, C2 Equipment, C3 Other Direct Costs, E
   Indirect) side by side, planned figure next to the actual figure derived

@@ -9,6 +9,7 @@ const summary: ExecutionProjectSummaryDto = {
     call_reference: 'ERC-2025-CoG',
     duration_years: 5,
     work_package_count: 3,
+    call_opening_date: null,
   },
   planned: {
     wp_budgets: [],

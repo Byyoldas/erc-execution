@@ -26,6 +26,12 @@ pub struct ProjectInfoDto {
     pub call_reference: String,
     pub duration_years: u8,
     pub work_package_count: u8,
+    /// `None` when never set in the Budget App -- `current_project_month`
+    /// then falls back to month 1 (see `progress_engine::
+    /// derive_current_project_month`). Read-only here: this app has never
+    /// mutated any `ProjectConfig` field, and this isn't the exception --
+    /// set or change it in ERC Budget, not here.
+    pub call_opening_date: Option<String>,
 }
 
 /// A lightweight projection of a Budget App `PersonnelRole`, just enough for
