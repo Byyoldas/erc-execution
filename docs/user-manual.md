@@ -60,11 +60,14 @@ The landing screen after opening a project. Shows:
 
 - **Project header** — title, PI, call reference, duration, and how far
   into the project you currently are (current month, computed from the
-  budget's call opening date; defaults to month 1 if that date was never
-  set in the Budget App). Right below it, either "Call opened: &lt;date&gt;"
-  or, if it was never set, a note pointing you to set it in ERC Budget —
-  this app only ever reads that date, never edits it, same as every other
-  piece of planned Budget App data.
+  budget's **project start date**; defaults to month 1 if that date was
+  never set in the Budget App). Right below it, either "Project started:
+  &lt;date&gt;" or, if it was never set, a note pointing you to set it in
+  ERC Budget — this app only ever reads that date, never edits it, same
+  as every other piece of planned Budget App data. Project start date is
+  a separate field from Call Opening Date (which only affects the EU
+  travel rate version) — set both in ERC Budget's Project Setup screen if
+  you need them.
 - **Planned vs. Actual** — every ERC budget category (A Personnel, B
   Subcontracting, C1 Travel, C2 Equipment, C3 Other Direct Costs, E
   Indirect) side by side, planned figure next to the actual figure derived
@@ -140,8 +143,8 @@ on your institution's own working-day length, which isn't recorded here),
 and it doesn't track which Work Packages a person worked on in a given
 month. Project acronym, project number, participant name, and type of
 personnel are also blank, since none of those are tracked in the app.
-This export needs the project's call opening date to be set in the Budget
-App — without it, project months can't be mapped to real calendar years.
+This export needs the project's start date to be set in the Budget App
+— without it, project months can't be mapped to real calendar years.
 
 ## 7. Milestones
 

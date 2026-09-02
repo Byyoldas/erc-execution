@@ -37,12 +37,14 @@ export function Dashboard() {
           {current_project_month} ({timeElapsedPct}% elapsed)
         </p>
         <p className="subtitle">
-          {project_info.call_opening_date ? (
-            <>Call opened: {project_info.call_opening_date}</>
+          {project_info.project_start_date ? (
+            <>Project started: {project_info.project_start_date}</>
           ) : (
             <>
-              Call opening date not set — set it in ERC Budget to enable real
-              Month/calendar tracking (currently defaulting to Month 1).
+              Project start date not set — set it in ERC Budget to enable
+              real Month/calendar tracking (currently defaulting to Month
+              1). This is distinct from Call Opening Date, which only
+              affects the EU travel rate version.
             </>
           )}
         </p>

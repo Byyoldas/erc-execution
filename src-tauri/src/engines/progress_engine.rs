@@ -7,9 +7,13 @@
 //! and `AtRisk` considers both milestones and overdue/rejected deliverables
 //! — see `derive_wp_status`.
 //!
-//! `current_project_month` auto-detects from `ProjectConfig.call_opening_date`
+//! `current_project_month` auto-detects from `ProjectConfig.project_start_date`
 //! (falling back to month 1 when unset) — a reasonable default for the
-//! architecture doc's own open question on this (§17, Q2).
+//! architecture doc's own open question on this (§17, Q2). Deliberately NOT
+//! `call_opening_date`: that field is an EC-calendar fact used only to pick
+//! the right EU travel rate version (see its own doc comment in erc-core),
+//! not the project's real timeline — `project_start_date` is when the Grant
+//! Agreement actually takes effect and "Month 1" begins.
 
 use crate::domain::enums::{DeliverableStatus, MilestoneStatus, WpStatus};
 use crate::domain::execution_entities::{Deliverable, Milestone, Person, PersonMonthRecord};
@@ -27,10 +31,10 @@ pub fn derive_current_project_month(project: &Project) -> u32 {
 
 fn derive_current_project_month_at(project: &Project, today: chrono::NaiveDate) -> u32 {
     let max_month = project.config.duration_years as u32 * 12;
-    let Some(call_opening_date) = &project.config.call_opening_date else {
+    let Some(project_start_date) = &project.config.project_start_date else {
         return 1;
     };
-    let Ok(base) = chrono::NaiveDate::parse_from_str(call_opening_date, "%Y-%m-%d") else {
+    let Ok(base) = chrono::NaiveDate::parse_from_str(project_start_date, "%Y-%m-%d") else {
         return 1;
     };
     if today <= base {
@@ -44,13 +48,13 @@ fn derive_current_project_month_at(project: &Project, today: chrono::NaiveDate) 
 /// Maps a 1-indexed `project_month` to a real (calendar_year, calendar_month
 /// 1-12) pair, for exports (e.g. the EU time-declaration template) that are
 /// organised by calendar year rather than project month. `None` when
-/// `call_opening_date` is unset or unparseable — same "skip until a calendar
-/// anchor is known" precedent as `derive_current_project_month`.
+/// `project_start_date` is unset or unparseable — same "skip until a
+/// calendar anchor is known" precedent as `derive_current_project_month`.
 pub fn project_month_to_calendar(
-    call_opening_date: Option<&str>,
+    project_start_date: Option<&str>,
     project_month: u32,
 ) -> Option<(i32, u32)> {
-    let base = chrono::NaiveDate::parse_from_str(call_opening_date?, "%Y-%m-%d").ok()?;
+    let base = chrono::NaiveDate::parse_from_str(project_start_date?, "%Y-%m-%d").ok()?;
     let total_months_0indexed =
         base.year() * 12 + (base.month() as i32 - 1) + (project_month as i32 - 1);
     let year = total_months_0indexed.div_euclid(12);
@@ -227,7 +231,7 @@ mod tests {
     use rust_decimal_macros::dec;
     use uuid::Uuid;
 
-    fn make_project(call_opening_date: Option<String>) -> Project {
+    fn make_project(project_start_date: Option<String>) -> Project {
         let config = ProjectConfig {
             project_title: "Test".to_string(),
             pi_name: "PI".to_string(),
@@ -241,7 +245,8 @@ mod tests {
             try_eur_rate: dec!(50),
             indirect_cost_rate_pct: dec!(25),
             rate_version_id: "from_2025_05_13".to_string(),
-            call_opening_date,
+            call_opening_date: None,
+            project_start_date,
         };
         Project::new(config)
     }
@@ -262,13 +267,13 @@ mod tests {
     // ─── derive_current_project_month ──────────────────────────────────
 
     #[test]
-    fn test_current_month_defaults_to_1_when_call_opening_date_unset() {
+    fn test_current_month_defaults_to_1_when_project_start_date_unset() {
         let project = make_project(None);
         assert_eq!(derive_current_project_month(&project), 1);
     }
 
     #[test]
-    fn test_current_month_is_1_on_call_opening_date_itself() {
+    fn test_current_month_is_1_on_project_start_date_itself() {
         let project = make_project(Some("2026-01-01".to_string()));
         let today = chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
         assert_eq!(derive_current_project_month_at(&project, today), 1);
@@ -292,12 +297,12 @@ mod tests {
     // ─── project_month_to_calendar ─────────────────────────────────────
 
     #[test]
-    fn test_calendar_none_when_call_opening_date_unset() {
+    fn test_calendar_none_when_project_start_date_unset() {
         assert_eq!(project_month_to_calendar(None, 1), None);
     }
 
     #[test]
-    fn test_calendar_none_when_call_opening_date_unparseable() {
+    fn test_calendar_none_when_project_start_date_unparseable() {
         assert_eq!(project_month_to_calendar(Some("not-a-date"), 1), None);
     }
 

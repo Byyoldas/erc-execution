@@ -24,7 +24,7 @@ export interface ProjectInfoDto {
   call_reference: string;
   duration_years: number;
   work_package_count: number;
-  call_opening_date: string | null;
+  project_start_date: string | null;
 }
 
 export interface PersonnelRoleSummaryDto {

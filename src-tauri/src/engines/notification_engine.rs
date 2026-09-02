@@ -41,12 +41,14 @@ fn parse_date(s: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()
 }
 
-/// The project's last calendar day, when `call_opening_date` is known (same
+/// The project's last calendar day, when `project_start_date` is known (same
 /// "skip when the calendar anchor is unset" precedent used elsewhere, e.g.
-/// BR-PM-06 in `validation::validate_person`).
+/// BR-PM-06 in `validation::validate_person`). Deliberately not
+/// `call_opening_date` -- that field picks the EU travel rate version, not
+/// the project's own timeline.
 fn project_end_date(project: &Project) -> Option<NaiveDate> {
-    let call_opening_date = project.config.call_opening_date.as_deref()?;
-    let base = parse_date(call_opening_date)?;
+    let project_start_date = project.config.project_start_date.as_deref()?;
+    let base = parse_date(project_start_date)?;
     let duration_months = project.config.duration_years as u32 * 12;
     base.checked_add_months(chrono::Months::new(duration_months.saturating_sub(1)))
 }
@@ -271,7 +273,7 @@ mod tests {
     use rust_decimal_macros::dec;
     use uuid::Uuid;
 
-    fn make_project(call_opening_date: Option<String>) -> Project {
+    fn make_project(project_start_date: Option<String>) -> Project {
         let config = ProjectConfig {
             project_title: "Test".to_string(),
             pi_name: "PI".to_string(),
@@ -285,7 +287,8 @@ mod tests {
             try_eur_rate: dec!(50),
             indirect_cost_rate_pct: dec!(25),
             rate_version_id: "from_2025_05_13".to_string(),
-            call_opening_date,
+            call_opening_date: None,
+            project_start_date,
         };
         Project::new(config)
     }
@@ -741,7 +744,7 @@ mod tests {
 
     #[test]
     fn test_w12_equipment_purchase_after_project_end() {
-        // duration_years=1, call_opening_date=2026-01-01 → project end = 2026-12-01.
+        // duration_years=1, project_start_date=2026-01-01 → project end = 2026-12-01.
         let project = make_project(Some("2026-01-01".to_string()));
         let mut exec = ExecutionData::default();
         exec.equipment_procurements.push(EquipmentProcurement {
@@ -759,7 +762,7 @@ mod tests {
     }
 
     #[test]
-    fn test_w12_skipped_without_call_opening_date() {
+    fn test_w12_skipped_without_project_start_date() {
         let project = make_project(None);
         let mut exec = ExecutionData::default();
         exec.equipment_procurements.push(EquipmentProcurement {

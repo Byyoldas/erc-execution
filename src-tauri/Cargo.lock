@@ -864,7 +864,7 @@ dependencies = [
 [[package]]
 name = "erc-core"
 version = "0.1.0"
-source = "git+https://github.com/Byyoldas/erc-core?rev=23cbd749b5a121fd09e9ea6347977e5f41b3979f#23cbd749b5a121fd09e9ea6347977e5f41b3979f"
+source = "git+https://github.com/Byyoldas/erc-core?rev=f13a436#f13a436d9cd930cd79b668702af6061d92a254f2"
 dependencies = [
  "chrono",
  "rust_decimal",

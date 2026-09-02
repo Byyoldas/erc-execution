@@ -29,7 +29,7 @@ pub fn add_person(
         &project.personnel_roles,
         &exec.partner_organizations,
         None,
-        project.config.call_opening_date.as_deref(),
+        project.config.project_start_date.as_deref(),
     )?;
 
     exec.persons.push(Person {
@@ -69,7 +69,7 @@ pub fn update_person(
         &project.personnel_roles,
         &exec.partner_organizations,
         Some(id),
-        project.config.call_opening_date.as_deref(),
+        project.config.project_start_date.as_deref(),
     )?;
 
     let person = exec

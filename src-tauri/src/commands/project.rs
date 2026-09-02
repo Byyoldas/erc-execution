@@ -110,7 +110,7 @@ pub(crate) fn build_summary(
                         .flatten()
                 });
             let (calendar_year, calendar_month) = progress_engine::project_month_to_calendar(
-                project.config.call_opening_date.as_deref(),
+                project.config.project_start_date.as_deref(),
                 record.project_month,
             )
             .unzip();
@@ -574,7 +574,7 @@ pub(crate) fn build_summary(
             call_reference: project.config.call_reference.clone(),
             duration_years: project.config.duration_years,
             work_package_count: project.config.work_package_count,
-            call_opening_date: project.config.call_opening_date.clone(),
+            project_start_date: project.config.project_start_date.clone(),
         },
         planned,
         current_project_month,

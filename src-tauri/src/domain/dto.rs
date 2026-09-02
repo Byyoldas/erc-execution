@@ -30,8 +30,11 @@ pub struct ProjectInfoDto {
     /// then falls back to month 1 (see `progress_engine::
     /// derive_current_project_month`). Read-only here: this app has never
     /// mutated any `ProjectConfig` field, and this isn't the exception --
-    /// set or change it in ERC Budget, not here.
-    pub call_opening_date: Option<String>,
+    /// set or change it in ERC Budget, not here. Deliberately not
+    /// `call_opening_date` (a distinct field, an EC-calendar fact used only
+    /// to pick the EU travel rate version) -- this is the real project
+    /// timeline anchor.
+    pub project_start_date: Option<String>,
 }
 
 /// A lightweight projection of a Budget App `PersonnelRole`, just enough for
@@ -163,8 +166,8 @@ pub struct PersonMonthDetailDto {
     /// record has an `approved_months` value.
     #[serde(default, with = "rust_decimal::serde::str_option")]
     pub salary_cost_estimate_eur: Option<Decimal>,
-    /// Derived from `project_month` + `ProjectConfig.call_opening_date`.
-    /// `None` when the call opening date is unset (see
+    /// Derived from `project_month` + `ProjectConfig.project_start_date`.
+    /// `None` when the project start date is unset (see
     /// `progress_engine::project_month_to_calendar`).
     pub calendar_year: Option<i32>,
     /// 1-12. See `calendar_year`.

@@ -35,17 +35,19 @@ fn parse_iso_date(s: &str) -> Option<chrono::NaiveDate> {
 /// # Arguments
 /// * `exclude_id` — the person's own id, when validating an update (excluded
 ///   from the BR-PM-01 "at most one Person per role" check).
-/// * `call_opening_date` — `ProjectConfig.call_opening_date`, used to convert
-///   the linked role's `start_month` into a calendar date for BR-PM-06. That
-///   field is optional in the Budget App, so BR-PM-06 is simply skipped
-///   (not an error) when it hasn't been set.
+/// * `project_start_date` — `ProjectConfig.project_start_date`, used to
+///   convert the linked role's `start_month` into a calendar date for
+///   BR-PM-06. That field is optional in the Budget App, so BR-PM-06 is
+///   simply skipped (not an error) when it hasn't been set. Deliberately
+///   not `call_opening_date` -- that field picks the EU travel rate
+///   version, not the project's own timeline.
 pub fn validate_person(
     dto: &PersonInputDto,
     existing_persons: &[Person],
     roles: &[PersonnelRole],
     partners: &[PartnerOrganization],
     exclude_id: Option<Uuid>,
-    call_opening_date: Option<&str>,
+    project_start_date: Option<&str>,
 ) -> Result<(), AppError> {
     let mut errors = ValidationErrors::default();
 
@@ -80,11 +82,11 @@ pub fn validate_person(
             }
 
             // BR-PM-06: actual start date must be <= the role's start month,
-            // when we can derive a calendar date (call_opening_date known).
+            // when we can derive a calendar date (project_start_date known).
             if let Some(start_date) = parse_iso_date(&dto.actual_start_date) {
-                if let Some(call_opening_date) = call_opening_date {
+                if let Some(project_start_date) = project_start_date {
                     if let Some(role_start_date) =
-                        month_to_calendar_date(call_opening_date, role.start_month)
+                        month_to_calendar_date(project_start_date, role.start_month)
                     {
                         if start_date > role_start_date {
                             errors.push(FieldError::new(
@@ -129,8 +131,8 @@ pub fn validate_person(
     errors.into_result()
 }
 
-fn month_to_calendar_date(call_opening_date: &str, month: u32) -> Option<chrono::NaiveDate> {
-    let base = chrono::NaiveDate::parse_from_str(call_opening_date, "%Y-%m-%d").ok()?;
+fn month_to_calendar_date(project_start_date: &str, month: u32) -> Option<chrono::NaiveDate> {
+    let base = chrono::NaiveDate::parse_from_str(project_start_date, "%Y-%m-%d").ok()?;
     base.checked_add_months(chrono::Months::new(month.saturating_sub(1)))
 }
 
@@ -1292,7 +1294,7 @@ mod tests {
     }
 
     #[test]
-    fn test_val_person_br_pm_06_skipped_when_call_opening_date_absent() {
+    fn test_val_person_br_pm_06_skipped_when_project_start_date_absent() {
         let role_id = Uuid::new_v4();
         let roles = vec![make_role(role_id, 1, 12)];
         let dto = PersonInputDto {
