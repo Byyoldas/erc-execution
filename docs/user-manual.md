@@ -1,4 +1,4 @@
-# ERC Execution — User Manual (v1.1.2)
+# ERC Execution — User Manual (v1.1.3)
 
 ERC Execution tracks the day-to-day running of a Horizon Europe project
 against the budget you planned in the **Budget Application** (erc-budget).
@@ -267,7 +267,37 @@ active warning across the whole project, most severe first:
 
 Click any entry to jump straight to the relevant screen.
 
-## 18. Frequently Asked Questions
+## 18. Partners
+
+Tracks the consortium's beneficiary organizations — coordinator, country,
+EU Participant Identification Code, contact, whether their Grant Agreement
+is signed, and their agreed budget share. This is data your own project
+file keeps about each partner, not a shared workspace they edit themselves
+— each organization runs their own copy of the app on their own files.
+
+- **Adding a partner**: name, country, and role (Coordinator / Beneficiary
+  / Associated Partner) are required; everything else is optional. Only
+  one partner can be marked Coordinator at a time.
+- **Linking people to a partner**: on the Personnel screen, each person's
+  add/edit form has a "Partner Organization" dropdown, next to the
+  free-text Institution field (which stays available if you don't want to
+  set up a full partner record).
+- **Actual cost, personnel only**: each partner's "Actual" column sums the
+  approved person-month costs of everyone linked to them. It does not yet
+  include Travel, Equipment, Other Costs, or Subcontracting — those aren't
+  attributed to a work package OR a partner anywhere in the app yet, the
+  same limitation Work Package tracking has always had. A ⚠️ appears if a
+  partner's personnel-only actual exceeds their declared budget share by
+  more than 10% — read as "over on personnel costs alone," not a signal
+  the partner is over their real total budget.
+- **Deleting a partner**: blocked while anyone is still linked to them —
+  the row shows who and a shortcut to the Personnel screen to reassign or
+  clear the link first.
+- The Dashboard's **Consortium** panel (appears once at least one partner
+  exists) mirrors this same planned-vs-actual view, plus how many partners
+  are validated.
+
+## 19. Frequently Asked Questions
 
 **Can I create a new project in ERC Execution?**
 No. Every project starts in the Budget Application; ERC Execution only
