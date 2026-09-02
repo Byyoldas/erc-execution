@@ -105,6 +105,15 @@
   color: #94a3b8;
 }
 
+.project-start-date-form {
+  margin: -0.75rem 0 0.4rem;
+}
+
+.project-start-date-form label {
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
 .screen h1 {
   margin: 0 0 1.5rem;
 }

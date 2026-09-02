@@ -3,9 +3,19 @@
  * budget; Sprint E3 adds the planned-vs-actual panel (M-07) now that
  * financial_engine exists (see docs/executer/execution-architecture.md §7).
  * Progress/warnings panels are still deferred — no notification_engine yet.
+ *
+ * Project Start Date is editable right here, not in ERC Budget -- the
+ * project's own explicit choice, and the one deliberate exception to this
+ * app's "read Budget App data, never write it back" rule (see
+ * commands::project::set_project_start_date's doc comment on the Rust
+ * side for the full rationale). Every other field on this screen stays
+ * read-only.
  */
 
+import { useState, useEffect } from 'react';
 import { useExecutionStore } from '../store/executionStore';
+import { useExecutionMutation } from '../hooks/useExecutionMutation';
+import { setProjectStartDate } from '../ipc/commands';
 import { fmtEur } from '../utils/currency';
 
 const CFS_LABELS: Record<string, string> = {
@@ -17,6 +27,12 @@ const CFS_LABELS: Record<string, string> = {
 
 export function Dashboard() {
   const summary = useExecutionStore((s) => s.summary);
+  const { run, error, isSubmitting } = useExecutionMutation();
+  const [startDateInput, setStartDateInput] = useState(summary?.project_info.project_start_date ?? '');
+
+  useEffect(() => {
+    setStartDateInput(summary?.project_info.project_start_date ?? '');
+  }, [summary?.project_info.project_start_date]);
 
   if (!summary) return null;
 
@@ -36,17 +52,28 @@ export function Dashboard() {
           {project_info.duration_years} year(s) · {project_info.work_package_count} WPs · Month{' '}
           {current_project_month} ({timeElapsedPct}% elapsed)
         </p>
+        <div className="inline-form project-start-date-form">
+          <label htmlFor="project_start_date">Project Start Date</label>
+          <input
+            id="project_start_date"
+            type="date"
+            value={startDateInput}
+            onChange={(e) => setStartDateInput(e.target.value)}
+          />
+          <button
+            onClick={() => run(() => setProjectStartDate(startDateInput || null))}
+            disabled={isSubmitting || startDateInput === (project_info.project_start_date ?? '')}
+          >
+            Save
+          </button>
+          {error && <span className="save-status-error">{error}</span>}
+        </div>
         <p className="subtitle">
-          {project_info.project_start_date ? (
-            <>Project started: {project_info.project_start_date}</>
-          ) : (
-            <>
-              Project start date not set — set it in ERC Budget to enable
-              real Month/calendar tracking (currently defaulting to Month
-              1). This is distinct from Call Opening Date, which only
-              affects the EU travel rate version.
-            </>
-          )}
+          When the Grant Agreement takes effect — drives every "Month X"
+          shown in this app. Distinct from Call Opening Date (set in ERC
+          Budget), which only affects the EU travel rate version.
+          {!project_info.project_start_date &&
+            ' Currently unset, so progress tracking defaults to Month 1.'}
         </p>
       </header>
 

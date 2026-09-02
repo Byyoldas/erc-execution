@@ -60,14 +60,14 @@ The landing screen after opening a project. Shows:
 
 - **Project header** — title, PI, call reference, duration, and how far
   into the project you currently are (current month, computed from the
-  budget's **project start date**; defaults to month 1 if that date was
-  never set in the Budget App). Right below it, either "Project started:
-  &lt;date&gt;" or, if it was never set, a note pointing you to set it in
-  ERC Budget — this app only ever reads that date, never edits it, same
-  as every other piece of planned Budget App data. Project start date is
-  a separate field from Call Opening Date (which only affects the EU
-  travel rate version) — set both in ERC Budget's Project Setup screen if
-  you need them.
+  **Project Start Date**; defaults to month 1 if that date was never set).
+  Right below the header is a **Project Start Date** field you set right
+  here, with a Save button — the one deliberate exception to "this app
+  only ever reads Budget App data, never edits it." Every other piece of
+  planned data (title, PI, call reference, duration, WP count, and the
+  separate Call Opening Date, which only affects the EU travel rate
+  version) still only lives in — and is only editable from — ERC Budget's
+  Project Setup screen.
 - **Planned vs. Actual** — every ERC budget category (A Personnel, B
   Subcontracting, C1 Travel, C2 Equipment, C3 Other Direct Costs, E
   Indirect) side by side, planned figure next to the actual figure derived

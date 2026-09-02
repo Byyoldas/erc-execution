@@ -31,6 +31,9 @@ export const openExecutionProject = (path: string): Promise<ExecutionProjectSumm
 export const saveExecutionProject = (): Promise<void> =>
   invoke('save_execution_project');
 
+export const setProjectStartDate = (date: string | null): Promise<ExecutionProjectSummaryDto> =>
+  invoke('set_project_start_date', { date });
+
 // ─── M-03: Personnel & Person-Month Tracking ──────────────────────────────────
 
 export const addPerson = (input: PersonInputDto): Promise<ExecutionProjectSummaryDto> =>

@@ -56,6 +56,7 @@ pub fn run() {
             // Project lifecycle
             commands::project::open_execution_project,
             commands::project::save_execution_project,
+            commands::project::set_project_start_date,
             // M-03: Personnel & Person-Month Tracking
             commands::persons::add_person,
             commands::persons::update_person,

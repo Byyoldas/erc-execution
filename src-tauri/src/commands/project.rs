@@ -647,3 +647,35 @@ pub fn save_execution_project(state: State<'_, AppState>) -> Result<(), AppError
 
     persistence::save_execution(project, exec, path)
 }
+
+/// Sets `ProjectConfig.project_start_date` -- the project's real official
+/// start date (when the Grant Agreement takes effect), which "Month 1"
+/// actually refers to everywhere in this app. This is a deliberate,
+/// singular exception to the rule every other command in this app follows
+/// (read Budget App data, never write it back): the user chose to have
+/// this one field entered here rather than in ERC Budget, since it's the
+/// one piece of planned config that Execution's own progress tracking
+/// depends on directly. No other `ProjectConfig` field gets this
+/// treatment -- everything else stays read-only.
+///
+/// No format validation beyond what the frontend's native date input
+/// already gives -- same loose-string precedent `call_opening_date` has
+/// in ERC Budget's own Project Setup form.
+#[tauri::command]
+pub fn set_project_start_date(
+    state: State<'_, AppState>,
+    date: Option<String>,
+) -> Result<ExecutionProjectSummaryDto, AppError> {
+    let mut project_lock = state.project.lock().unwrap();
+    let project = project_lock.as_mut().ok_or(AppError::NoProject)?;
+    project.config.project_start_date = date;
+
+    let exec_lock = state.execution_data.lock().unwrap();
+    let exec = exec_lock.as_ref().ok_or(AppError::NoProject)?;
+
+    let summary = build_summary(project, exec, &state)?;
+    if let Some(path) = state.project_path.lock().unwrap().as_deref() {
+        persistence::auto_save(project, exec, path)?;
+    }
+    Ok(summary)
+}
