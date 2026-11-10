@@ -313,7 +313,11 @@ mod tests {
 
     // ─── M-25: consortium planned budget ───────────────────────────────
 
-    fn make_partner(name: &str, is_own: bool, funding_rate_pct: Option<Decimal>) -> PartnerOrganization {
+    fn make_partner(
+        name: &str,
+        is_own: bool,
+        funding_rate_pct: Option<Decimal>,
+    ) -> PartnerOrganization {
         use crate::domain::enums::{PartnerRole, PartnerValidationStatus};
         PartnerOrganization {
             id: Uuid::new_v4(),
@@ -460,7 +464,8 @@ mod tests {
         let a = make_partner("A", false, None);
         let b = make_partner("B", false, None);
         let c = make_partner("C", true, None);
-        let result = calculate_consortium_budget(&[a.clone(), b.clone(), c.clone()], &[], &own_figures());
+        let result =
+            calculate_consortium_budget(&[a.clone(), b.clone(), c.clone()], &[], &own_figures());
         let ids: Vec<Uuid> = result.rows.iter().map(|r| r.partner_id).collect();
         assert_eq!(ids, vec![a.id, b.id, c.id]);
     }

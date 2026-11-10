@@ -8,9 +8,9 @@
 
 use super::enums::{
     AmendmentStatus, AmendmentType, CostCategory, DeliverableStatus, DeliverableType,
-    DisseminationLevel, EntryStatus, FundingModel, IssueStatus, Level, MilestoneStatus, NavigationTarget,
-    PartnerRole, PartnerValidationStatus, ReportingPeriodStatus, RiskStatus, WarningSeverity,
-    WpStatus,
+    DisseminationLevel, EntryStatus, FundingModel, IssueStatus, Level, MilestoneStatus,
+    NavigationTarget, PartnerRole, PartnerValidationStatus, ReportingPeriodStatus, RiskStatus,
+    WarningSeverity, WpStatus,
 };
 use erc_core::domain::dto::{BudgetSummaryDto, CfsStatus};
 use erc_core::domain::entities::RoleType;

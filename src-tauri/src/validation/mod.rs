@@ -2571,7 +2571,9 @@ mod tests {
         let self_id = Uuid::new_v4();
         let mut dto = partner_dto();
         dto.is_own_organization = true;
-        assert!(validate_partner_organization(&dto, &[own_partner(self_id)], Some(self_id)).is_ok());
+        assert!(
+            validate_partner_organization(&dto, &[own_partner(self_id)], Some(self_id)).is_ok()
+        );
     }
 
     #[test]
@@ -2626,13 +2628,21 @@ mod tests {
     fn test_val_cb_negative_amount_returns_error() {
         let id = Uuid::new_v4();
         let partners = [make_partner(id, "KTH", PartnerRole::Beneficiary)];
-        let codes = error_codes(validate_partner_budget_amount(id, Some(dec!(-1)), &partners));
+        let codes = error_codes(validate_partner_budget_amount(
+            id,
+            Some(dec!(-1)),
+            &partners,
+        ));
         assert_eq!(codes, vec!["NEGATIVE_AMOUNT"]);
     }
 
     #[test]
     fn test_val_cb_unknown_partner_returns_error() {
-        let codes = error_codes(validate_partner_budget_amount(Uuid::new_v4(), Some(dec!(1)), &[]));
+        let codes = error_codes(validate_partner_budget_amount(
+            Uuid::new_v4(),
+            Some(dec!(1)),
+            &[],
+        ));
         assert_eq!(codes, vec!["UNKNOWN_PARTNER"]);
     }
 
@@ -2674,7 +2684,13 @@ mod tests {
 
     #[test]
     fn test_val_ls_unknown_partner_returns_error() {
-        let codes = error_codes(validate_lump_sum_share(1, Uuid::new_v4(), Some(dec!(1)), &[], 5));
+        let codes = error_codes(validate_lump_sum_share(
+            1,
+            Uuid::new_v4(),
+            Some(dec!(1)),
+            &[],
+            5,
+        ));
         assert_eq!(codes, vec!["UNKNOWN_PARTNER"]);
     }
 
@@ -2688,7 +2704,13 @@ mod tests {
 
     #[test]
     fn test_val_ls_reports_every_problem_at_once() {
-        let codes = error_codes(validate_lump_sum_share(9, Uuid::new_v4(), Some(dec!(-5)), &[], 5));
+        let codes = error_codes(validate_lump_sum_share(
+            9,
+            Uuid::new_v4(),
+            Some(dec!(-5)),
+            &[],
+            5,
+        ));
         assert_eq!(codes.len(), 3);
     }
 }

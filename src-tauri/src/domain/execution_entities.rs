@@ -477,11 +477,21 @@ mod tests {
     #[test]
     fn test_cost_category_serialises_and_sorts_in_budget_table_order() {
         assert_eq!(serde_json::to_string(&CostCategory::C1).unwrap(), "\"C1\"");
-        let mut shuffled = vec![CostCategory::E, CostCategory::A, CostCategory::C2, CostCategory::D];
+        let mut shuffled = vec![
+            CostCategory::E,
+            CostCategory::A,
+            CostCategory::C2,
+            CostCategory::D,
+        ];
         shuffled.sort();
         assert_eq!(
             shuffled,
-            vec![CostCategory::A, CostCategory::C2, CostCategory::D, CostCategory::E]
+            vec![
+                CostCategory::A,
+                CostCategory::C2,
+                CostCategory::D,
+                CostCategory::E
+            ]
         );
         assert_eq!(CostCategory::ALL.len(), 7);
     }
