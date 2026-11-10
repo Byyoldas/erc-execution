@@ -109,177 +109,251 @@ export function Partners() {
   const linkedNames = (partnerId: string) =>
     persons.filter((p) => p.partner_organization_id === partnerId).map((p) => p.full_name);
 
+  const isActualCost = fundingModel === 'HorizonActualCost';
+  // Name, Role, Country, Validation, GA Signed, Planned, Actual, actions.
+  const columnCount = 8 + (isActualCost ? 1 : 0);
+
   return (
     <div className="screen">
       <h1>Partners</h1>
       {error && <p className="error-banner">{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Role</th>
-            <th>Country</th>
-            <th>Validation</th>
-            <th>GA Signed</th>
-            <th>{PLANNED_COLUMN_LABEL[fundingModel]}</th>
-            {fundingModel === 'HorizonActualCost' && <th>Funding rate</th>}
-            <th>Actual (personnel only)</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {partners.map((p) => {
-            const linked = linkedNames(p.id);
-            const planned = plannedTotalForPartner(summary, p.id);
-            return (
-              <tr key={p.id} className={p.is_own_organization ? 'row-own' : undefined}>
-                <td>
-                  {p.name}
-                  {p.is_own_organization && <span className="badge-own">your organization</span>}
-                  {p.short_name && <div className="subtitle">{p.short_name}</div>}
-                </td>
-                <td>{p.role === 'Coordinator' ? <strong>Coordinator</strong> : ROLE_LABEL[p.role]}</td>
-                <td>{p.country}</td>
-                <td>{p.validation_status}</td>
-                <td>{p.grant_agreement_signed ? '✓' : '—'}</td>
-                <td>{planned ? fmtEur(planned) : '—'}</td>
-                {fundingModel === 'HorizonActualCost' && (
-                  <td>{p.is_own_organization ? '—' : `${p.funding_rate_pct ?? '100'}%`}</td>
-                )}
-                <td>
-                  {fmtEur(p.actual_personnel_cost_eur)}
-                  {p.over_budget_warning && ' ⚠️'}
-                </td>
-                <td>
-                  <button
-                    onClick={() => {
-                      setForm(toForm(p));
-                      setEditingId(p.id);
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Edit
-                  </button>{' '}
-                  {linked.length > 0 ? (
-                    <span className="subtitle" title={linked.join(', ')}>
-                      Linked: {linked.length} —{' '}
-                      <button onClick={() => setActiveScreen('personnel')}>view</button>
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => run(() => deletePartnerOrganization(p.id))}
-                      disabled={isSubmitting}
-                      title={isHorizon ? 'Also removes this partner’s planned budget.' : undefined}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {/* The entry row below lives inside the table so every input sits
+          directly under its own column; its fields point at this form via
+          the `form` attribute, so Enter still submits. */}
+      <form id="partner-form" onSubmit={submit} />
 
-      <form onSubmit={submit} className="inline-form">
-        {editingId && <strong>Editing “{form.name || 'partner'}”</strong>}
-        <input
-          placeholder="Name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Short name"
-          value={form.short_name ?? ''}
-          onChange={(e) => setForm({ ...form, short_name: e.target.value || null })}
-        />
-        <input
-          placeholder="Country"
-          value={form.country}
-          onChange={(e) => setForm({ ...form, country: e.target.value })}
-          required
-        />
-        <input
-          placeholder="PIC number"
-          value={form.pic_number ?? ''}
-          onChange={(e) => setForm({ ...form, pic_number: e.target.value || null })}
-        />
-        <select
-          value={form.role}
-          onChange={(e) => setForm({ ...form, role: e.target.value as PartnerRole })}
-        >
-          {ROLES.map((r) => (
-            <option key={r} value={r}>
-              {ROLE_LABEL[r]}
-            </option>
-          ))}
-        </select>
-        <input
-          placeholder="Contact name"
-          value={form.contact_name ?? ''}
-          onChange={(e) => setForm({ ...form, contact_name: e.target.value || null })}
-        />
-        <input
-          placeholder="Contact email"
-          value={form.contact_email ?? ''}
-          onChange={(e) => setForm({ ...form, contact_email: e.target.value || null })}
-        />
-        <select
-          value={form.validation_status}
-          onChange={(e) =>
-            setForm({ ...form, validation_status: e.target.value as PartnerValidationStatus })
-          }
-        >
-          {VALIDATION_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <label>
-          <input
-            type="checkbox"
-            checked={form.grant_agreement_signed}
-            onChange={(e) => setForm({ ...form, grant_agreement_signed: e.target.checked })}
-          />
-          GA signed
-        </label>
-        {isHorizon && (
-          <label title="The one partner whose planned figures come from your Budget file.">
-            <input
-              type="checkbox"
-              checked={form.is_own_organization}
-              onChange={(e) => setForm({ ...form, is_own_organization: e.target.checked })}
-            />
-            My organization
-          </label>
-        )}
-        {fundingModel === 'HorizonActualCost' && (
-          <input
-            placeholder="EU funding rate % (blank = 100)"
-            aria-label="EU funding rate percent"
-            value={form.funding_rate_pct ?? ''}
-            onChange={(e) => setForm({ ...form, funding_rate_pct: e.target.value || null })}
-          />
-        )}
-        {!isHorizon && (
-          <input
-            placeholder="Planned budget share (€)"
-            value={form.planned_budget_share_eur ?? ''}
-            onChange={(e) => setForm({ ...form, planned_budget_share_eur: e.target.value || null })}
-          />
-        )}
-        <button type="submit" disabled={isSubmitting}>
-          {editingId ? 'Save Changes' : 'Add Partner'}
-        </button>
-        {editingId && (
-          <button type="button" onClick={cancelEdit} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
-      </form>
+      <div className="matrix-scroll">
+        <table className="partners-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Country</th>
+              <th>Validation</th>
+              <th>GA Signed</th>
+              <th>{PLANNED_COLUMN_LABEL[fundingModel]}</th>
+              {isActualCost && <th>Funding rate</th>}
+              <th>Actual (personnel only)</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {partners.map((p) => {
+              const linked = linkedNames(p.id);
+              const planned = plannedTotalForPartner(summary, p.id);
+              return (
+                <tr key={p.id} className={p.is_own_organization ? 'row-own' : undefined}>
+                  <td>
+                    {p.name}
+                    {p.is_own_organization && <span className="badge-own">your organization</span>}
+                    {p.short_name && <div className="subtitle">{p.short_name}</div>}
+                  </td>
+                  <td>{p.role === 'Coordinator' ? <strong>Coordinator</strong> : ROLE_LABEL[p.role]}</td>
+                  <td>{p.country}</td>
+                  <td>{p.validation_status}</td>
+                  <td>{p.grant_agreement_signed ? '✓' : '—'}</td>
+                  <td>{planned ? fmtEur(planned) : '—'}</td>
+                  {isActualCost && (
+                    <td>{p.is_own_organization ? '—' : `${p.funding_rate_pct ?? '100'}%`}</td>
+                  )}
+                  <td>
+                    {fmtEur(p.actual_personnel_cost_eur)}
+                    {p.over_budget_warning && ' ⚠️'}
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => {
+                        setForm(toForm(p));
+                        setEditingId(p.id);
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      Edit
+                    </button>{' '}
+                    {linked.length > 0 ? (
+                      <span className="subtitle" title={linked.join(', ')}>
+                        Linked: {linked.length} —{' '}
+                        <button onClick={() => setActiveScreen('personnel')}>view</button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => run(() => deletePartnerOrganization(p.id))}
+                        disabled={isSubmitting}
+                        title={isHorizon ? 'Also removes this partner’s planned budget.' : undefined}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+
+          <tbody className="entry-block">
+            <tr className="entry-caption">
+              <td colSpan={columnCount}>
+                {editingId ? <strong>Editing “{form.name || 'partner'}”</strong> : 'Add a partner'}
+              </td>
+            </tr>
+            <tr className="entry-row">
+              <td>
+                <input
+                  form="partner-form"
+                  placeholder="Name"
+                  aria-label="Name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                />
+                <input
+                  form="partner-form"
+                  placeholder="Short name"
+                  aria-label="Short name"
+                  value={form.short_name ?? ''}
+                  onChange={(e) => setForm({ ...form, short_name: e.target.value || null })}
+                />
+              </td>
+              <td>
+                <select
+                  form="partner-form"
+                  aria-label="Role"
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value as PartnerRole })}
+                >
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABEL[r]}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td>
+                <input
+                  form="partner-form"
+                  placeholder="Country"
+                  aria-label="Country"
+                  value={form.country}
+                  onChange={(e) => setForm({ ...form, country: e.target.value })}
+                  required
+                />
+              </td>
+              <td>
+                <select
+                  form="partner-form"
+                  aria-label="Validation status"
+                  value={form.validation_status}
+                  onChange={(e) =>
+                    setForm({ ...form, validation_status: e.target.value as PartnerValidationStatus })
+                  }
+                >
+                  {VALIDATION_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td>
+                <label className="check-cell">
+                  <input
+                    form="partner-form"
+                    type="checkbox"
+                    checked={form.grant_agreement_signed}
+                    onChange={(e) => setForm({ ...form, grant_agreement_signed: e.target.checked })}
+                  />
+                  GA signed
+                </label>
+              </td>
+              <td>
+                {isHorizon ? (
+                  <span className="subtitle">
+                    {isActualCost ? 'From Consortium Budget' : 'From Lump Sum Plan'}
+                  </span>
+                ) : (
+                  <input
+                    form="partner-form"
+                    placeholder="Planned budget share (€)"
+                    aria-label="Planned budget share"
+                    value={form.planned_budget_share_eur ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...form, planned_budget_share_eur: e.target.value || null })
+                    }
+                  />
+                )}
+              </td>
+              {isActualCost && (
+                <td>
+                  <input
+                    form="partner-form"
+                    placeholder="100"
+                    aria-label="EU funding rate percent"
+                    title="EU funding rate %. Blank means 100."
+                    value={form.funding_rate_pct ?? ''}
+                    onChange={(e) => setForm({ ...form, funding_rate_pct: e.target.value || null })}
+                  />
+                </td>
+              )}
+              <td />
+              <td>
+                <button type="submit" form="partner-form" disabled={isSubmitting}>
+                  {editingId ? 'Save Changes' : 'Add Partner'}
+                </button>{' '}
+                {editingId && (
+                  <button type="button" onClick={cancelEdit} disabled={isSubmitting}>
+                    Cancel
+                  </button>
+                )}
+              </td>
+            </tr>
+            <tr className="entry-details">
+              <td colSpan={columnCount}>
+                <div className="details-grid">
+                  <label>
+                    PIC number
+                    <input
+                      form="partner-form"
+                      value={form.pic_number ?? ''}
+                      onChange={(e) => setForm({ ...form, pic_number: e.target.value || null })}
+                    />
+                  </label>
+                  <label>
+                    Contact name
+                    <input
+                      form="partner-form"
+                      value={form.contact_name ?? ''}
+                      onChange={(e) => setForm({ ...form, contact_name: e.target.value || null })}
+                    />
+                  </label>
+                  <label>
+                    Contact email
+                    <input
+                      form="partner-form"
+                      value={form.contact_email ?? ''}
+                      onChange={(e) => setForm({ ...form, contact_email: e.target.value || null })}
+                    />
+                  </label>
+                  {isHorizon && (
+                    <label
+                      className="check-cell"
+                      title="The one partner whose planned figures come from your Budget file."
+                    >
+                      <input
+                        form="partner-form"
+                        type="checkbox"
+                        checked={form.is_own_organization}
+                        onChange={(e) => setForm({ ...form, is_own_organization: e.target.checked })}
+                      />
+                      My organization
+                    </label>
+                  )}
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
