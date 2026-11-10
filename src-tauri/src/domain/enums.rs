@@ -168,6 +168,46 @@ pub enum PartnerRole {
     AssociatedPartner,
 }
 
+/// M-25: which grant funding model the project runs under. Decides which
+/// consortium-planning screens the UI shows -- never which data exists
+/// (BR-FM-01: switching models is non-destructive). `Erc` is the default and
+/// means "the app exactly as it was before M-25".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum FundingModel {
+    #[default]
+    Erc,
+    HorizonActualCost,
+    HorizonLumpSum,
+}
+
+/// M-25: Horizon Europe actual-cost budget categories. `A`..`C3` and `E`
+/// mirror the Budget App's own categories; `D` (other cost categories) only
+/// exists for consortium partners -- the Budget App has no equivalent.
+/// Declared in budget-table order so derived `Ord` sorts them that way.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum CostCategory {
+    A,
+    B,
+    C1,
+    C2,
+    C3,
+    D,
+    E,
+}
+
+impl CostCategory {
+    /// Every category, in budget-table order.
+    pub const ALL: [CostCategory; 7] = [
+        CostCategory::A,
+        CostCategory::B,
+        CostCategory::C1,
+        CostCategory::C2,
+        CostCategory::C3,
+        CostCategory::D,
+        CostCategory::E,
+    ];
+}
+
 /// M-24 consortium-agreement validation status, self-declared (the app has
 /// no EU Participant Register integration — same "self-declared, advisory"
 /// precedent as `Deliverable.cordis_registered`).

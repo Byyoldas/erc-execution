@@ -1137,6 +1137,8 @@ mod tests {
             grant_agreement_signed: false,
             planned_budget_share_eur: None,
             notes: None,
+            is_own_organization: false,
+            funding_rate_pct: None,
         }];
         let dto = PersonInputDto {
             full_name: "Ada Lovelace".to_string(),
@@ -2293,6 +2295,8 @@ mod tests {
             grant_agreement_signed: false,
             planned_budget_share_eur: None,
             notes: None,
+            is_own_organization: false,
+            funding_rate_pct: None,
         }
     }
 

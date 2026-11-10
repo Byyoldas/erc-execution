@@ -430,6 +430,8 @@ mod tests {
             grant_agreement_signed: true,
             planned_budget_share_eur: Some(dec!(450000)),
             notes: None,
+            is_own_organization: false,
+            funding_rate_pct: None,
         });
         exec.persons.push(Person {
             id: uuid::Uuid::new_v4(),

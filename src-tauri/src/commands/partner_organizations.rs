@@ -36,6 +36,8 @@ pub fn add_partner_organization(
         grant_agreement_signed: input.grant_agreement_signed,
         planned_budget_share_eur: input.planned_budget_share_eur,
         notes: input.notes,
+        is_own_organization: false,
+        funding_rate_pct: None,
     });
 
     let summary = build_summary(project, exec, &state)?;

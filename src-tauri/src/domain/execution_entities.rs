@@ -12,9 +12,9 @@
 //! isn't part of M-05/M-14's own scope; still per-month for now.
 
 use super::enums::{
-    AmendmentStatus, AmendmentType, DeliverableStatus, DeliverableType, DisseminationLevel,
-    EntryStatus, IssueStatus, Level, MilestoneStatus, PartnerRole, PartnerValidationStatus,
-    ReportingPeriodStatus, RiskStatus,
+    AmendmentStatus, AmendmentType, CostCategory, DeliverableStatus, DeliverableType,
+    DisseminationLevel, EntryStatus, FundingModel, IssueStatus, Level, MilestoneStatus,
+    PartnerRole, PartnerValidationStatus, ReportingPeriodStatus, RiskStatus,
 };
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -54,6 +54,18 @@ pub struct ExecutionData {
     pub issues: Vec<IssueEntry>,
     #[serde(default)]
     pub partner_organizations: Vec<PartnerOrganization>,
+    /// M-25. `Erc` for every file saved before this field existed.
+    #[serde(default)]
+    pub funding_model: FundingModel,
+    /// M-25 (actual-cost model): planned eligible cost per partner per
+    /// category. Never holds the own organization's figures -- those are
+    /// derived from the Budget file each time (BR-CB-02).
+    #[serde(default)]
+    pub partner_budget_lines: Vec<PartnerBudgetLine>,
+    /// M-25 (lump-sum model): planned lump-sum share per work package per
+    /// partner.
+    #[serde(default)]
+    pub lump_sum_shares: Vec<LumpSumShare>,
 }
 
 impl Default for ExecutionData {
@@ -74,6 +86,9 @@ impl Default for ExecutionData {
             issues: Vec::new(),
             reporting_periods: Vec::new(),
             partner_organizations: Vec::new(),
+            funding_model: FundingModel::default(),
+            partner_budget_lines: Vec::new(),
+            lump_sum_shares: Vec::new(),
         }
     }
 }
@@ -350,6 +365,41 @@ pub struct PartnerOrganization {
     #[serde(default, with = "rust_decimal::serde::str_option")]
     pub planned_budget_share_eur: Option<Decimal>,
     pub notes: Option<String>,
+    /// M-25, BR-PO-07: marks the one partner that is the user's own
+    /// organization -- the one whose planned figures come from the Budget
+    /// file rather than being entered here.
+    #[serde(default)]
+    pub is_own_organization: bool,
+    /// M-25, BR-PO-08: EU funding rate, 0-100. `None` means 100.
+    #[serde(default, with = "rust_decimal::serde::str_option")]
+    pub funding_rate_pct: Option<Decimal>,
+}
+
+/// M-25: one partner's planned eligible cost in one category (actual-cost
+/// model). Unique per `(partner_id, category)` -- upsert semantics, enforced
+/// by `commands::consortium::set_partner_budget_amount`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PartnerBudgetLine {
+    pub id: Uuid,
+    /// References `PartnerOrganization.id`.
+    pub partner_id: Uuid,
+    pub category: CostCategory,
+    /// BR-CB-01: always > 0 -- a zero amount removes the line instead.
+    #[serde(with = "rust_decimal::serde::str")]
+    pub amount_eur: Decimal,
+}
+
+/// M-25: one partner's planned lump-sum share of one work package (lump-sum
+/// model). Unique per `(work_package_id, partner_id)` -- upsert semantics.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LumpSumShare {
+    pub id: Uuid,
+    pub work_package_id: u8,
+    /// References `PartnerOrganization.id`.
+    pub partner_id: Uuid,
+    /// BR-LS-01: always > 0 -- a zero amount removes the share instead.
+    #[serde(with = "rust_decimal::serde::str")]
+    pub amount_eur: Decimal,
 }
 
 #[cfg(test)]
@@ -374,6 +424,93 @@ mod tests {
         assert!(data.risks.is_empty());
         assert!(data.issues.is_empty());
         assert!(data.partner_organizations.is_empty());
+        assert_eq!(data.funding_model, FundingModel::Erc);
+        assert!(data.partner_budget_lines.is_empty());
+        assert!(data.lump_sum_shares.is_empty());
+    }
+
+    #[test]
+    fn test_pre_m25_json_loads_as_erc_with_no_consortium_budget() {
+        // A file saved before M-25 has none of the three new top-level
+        // fields -- BR-FM-01: it must open as a plain ERC project.
+        let json = r#"{"schema_version":"1.0","partner_organizations":[]}"#;
+        let data: ExecutionData = serde_json::from_str(json).unwrap();
+        assert_eq!(data.funding_model, FundingModel::Erc);
+        assert!(data.partner_budget_lines.is_empty());
+        assert!(data.lump_sum_shares.is_empty());
+    }
+
+    #[test]
+    fn test_pre_m25_partner_json_loads_with_new_fields_defaulted() {
+        // A partner saved by the M-24 build has neither new field.
+        let json = r#"{
+            "id": "11111111-1111-4111-8111-111111111111",
+            "name": "KTH",
+            "short_name": null,
+            "country": "Sweden",
+            "pic_number": null,
+            "role": "Beneficiary",
+            "contact_name": null,
+            "contact_email": null,
+            "validation_status": "NotStarted",
+            "grant_agreement_signed": false,
+            "planned_budget_share_eur": null,
+            "notes": null
+        }"#;
+        let partner: PartnerOrganization = serde_json::from_str(json).unwrap();
+        assert!(!partner.is_own_organization);
+        assert_eq!(partner.funding_rate_pct, None);
+    }
+
+    #[test]
+    fn test_funding_model_serialises_as_variant_name() {
+        assert_eq!(
+            serde_json::to_string(&FundingModel::HorizonActualCost).unwrap(),
+            "\"HorizonActualCost\""
+        );
+        assert_eq!(
+            serde_json::from_str::<FundingModel>("\"HorizonLumpSum\"").unwrap(),
+            FundingModel::HorizonLumpSum
+        );
+    }
+
+    #[test]
+    fn test_cost_category_serialises_and_sorts_in_budget_table_order() {
+        assert_eq!(serde_json::to_string(&CostCategory::C1).unwrap(), "\"C1\"");
+        let mut shuffled = vec![CostCategory::E, CostCategory::A, CostCategory::C2, CostCategory::D];
+        shuffled.sort();
+        assert_eq!(
+            shuffled,
+            vec![CostCategory::A, CostCategory::C2, CostCategory::D, CostCategory::E]
+        );
+        assert_eq!(CostCategory::ALL.len(), 7);
+    }
+
+    #[test]
+    fn test_consortium_planning_entities_roundtrip() {
+        use rust_decimal_macros::dec;
+
+        let partner_id = Uuid::new_v4();
+        let mut data = ExecutionData {
+            funding_model: FundingModel::HorizonActualCost,
+            ..ExecutionData::default()
+        };
+        data.partner_budget_lines.push(PartnerBudgetLine {
+            id: Uuid::new_v4(),
+            partner_id,
+            category: CostCategory::C2,
+            amount_eur: dec!(12345.67),
+        });
+        data.lump_sum_shares.push(LumpSumShare {
+            id: Uuid::new_v4(),
+            work_package_id: 3,
+            partner_id,
+            amount_eur: dec!(80000),
+        });
+
+        let json = serde_json::to_string(&data).unwrap();
+        let reloaded: ExecutionData = serde_json::from_str(&json).unwrap();
+        assert_eq!(data, reloaded);
     }
 
     #[test]
@@ -430,6 +567,8 @@ mod tests {
             grant_agreement_signed: true,
             planned_budget_share_eur: Some(dec!(450000)),
             notes: None,
+            is_own_organization: false,
+            funding_rate_pct: None,
         };
 
         let json = serde_json::to_string(&partner).unwrap();
