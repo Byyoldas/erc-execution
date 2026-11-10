@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { EntryBlock, EntryInput, EntryScope, EntrySubmit } from '../components/EntryTable';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionMutation } from '../hooks/useExecutionMutation';
 import { addMilestone, completeMilestone, deleteMilestone } from '../ipc/commands';
@@ -46,67 +47,86 @@ export function Milestones() {
       <h1>Milestone Tracking</h1>
       {error && <p className="error-banner">{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>WP</th>
-            <th>Planned Month</th>
-            <th>Status</th>
-            <th>Actual Completion</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {milestones.map((m) => (
-            <tr key={m.id}>
-              <td>{m.title}</td>
-              <td>WP{m.work_package_id}</td>
-              <td>{m.planned_month}</td>
-              <td>{STATUS_LABELS[m.effective_status] ?? m.effective_status}</td>
-              <td>{m.actual_completion_month ?? '—'}</td>
+      <EntryScope id="milestone-form" onSubmit={submit}>
+        <div className="matrix-scroll">
+          <table className="entry-table">
+            <thead>
+              <tr>
+                <th className="col-wide">Title</th>
+                <th>WP</th>
+                <th>Planned Month</th>
+                <th>Status</th>
+                <th>Actual Completion</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {milestones.map((m) => (
+                <tr key={m.id}>
+                  <td>{m.title}</td>
+                  <td>WP{m.work_package_id}</td>
+                  <td>{m.planned_month}</td>
+                  <td>{STATUS_LABELS[m.effective_status] ?? m.effective_status}</td>
+                  <td>{m.actual_completion_month ?? '—'}</td>
+                  <td>
+                    {m.effective_status !== 'Completed' && (
+                      <button onClick={() => run(() => completeMilestone(m.id))} disabled={isSubmitting}>
+                        Complete
+                      </button>
+                    )}
+                    <button onClick={() => run(() => deleteMilestone(m.id))} disabled={isSubmitting}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <EntryBlock
+              columnCount={6}
+              caption="Add a milestone"
+            >
               <td>
-                {m.effective_status !== 'Completed' && (
-                  <button onClick={() => run(() => completeMilestone(m.id))} disabled={isSubmitting}>
-                    Complete
-                  </button>
-                )}
-                <button onClick={() => run(() => deleteMilestone(m.id))} disabled={isSubmitting}>
-                  Delete
-                </button>
+                <EntryInput
+                  aria-label="Title"
+                  placeholder="Title"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  required
+                />
               </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <form onSubmit={submit} className="inline-form">
-        <input
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
-        />
-        <input
-          type="number"
-          min={1}
-          placeholder="WP"
-          value={form.work_package_id}
-          onChange={(e) => setForm({ ...form, work_package_id: Number(e.target.value) })}
-          required
-        />
-        <input
-          type="number"
-          min={1}
-          placeholder="Planned month"
-          value={form.planned_month}
-          onChange={(e) => setForm({ ...form, planned_month: Number(e.target.value) })}
-          required
-        />
-        <button type="submit" disabled={isSubmitting}>
-          Add Milestone
-        </button>
-      </form>
+              <td>
+                <EntryInput
+                  type="number"
+                  min={1}
+                  aria-label="Work package"
+                  placeholder="WP"
+                  value={form.work_package_id}
+                  onChange={(e) => setForm({ ...form, work_package_id: Number(e.target.value) })}
+                  required
+                />
+              </td>
+              <td>
+                <EntryInput
+                  type="number"
+                  min={1}
+                  aria-label="Planned month"
+                  placeholder="Month"
+                  value={form.planned_month}
+                  onChange={(e) => setForm({ ...form, planned_month: Number(e.target.value) })}
+                  required
+                />
+              </td>
+              <td>
+                <span className="subtitle hint">Not Started</span>
+              </td>
+              <td />
+              <td>
+                <EntrySubmit disabled={isSubmitting}>Add</EntrySubmit>
+              </td>
+            </EntryBlock>
+          </table>
+        </div>
+      </EntryScope>
     </div>
   );
 }

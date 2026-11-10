@@ -7,6 +7,7 @@
  */
 
 import { useState } from 'react';
+import { DetailField, EntryBlock, EntryInput, EntryScope, EntrySelect, EntrySubmit } from '../components/EntryTable';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionMutation } from '../hooks/useExecutionMutation';
 import { addDeliverable, deleteDeliverable } from '../ipc/commands';
@@ -56,104 +57,137 @@ export function Deliverables() {
       <h1>Deliverable Tracking</h1>
       {error && <p className="error-banner">{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Title</th>
-            <th>WP</th>
-            <th>Type</th>
-            <th>Due Month</th>
-            <th>Status</th>
-            <th>Period</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {deliverables.map((d) => (
-            <tr key={d.id}>
-              <td>{d.deliverable_number}</td>
-              <td>{d.title}</td>
-              <td>WP{d.work_package_id}</td>
-              <td>{d.deliverable_type}</td>
+      <EntryScope id="deliverable-form" onSubmit={submit}>
+        <div className="matrix-scroll">
+          <table className="entry-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th className="col-wide">Title</th>
+                <th>WP</th>
+                <th>Type</th>
+                <th>Due Month</th>
+                <th>Status</th>
+                <th>Period</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {deliverables.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.deliverable_number}</td>
+                  <td>{d.title}</td>
+                  <td>WP{d.work_package_id}</td>
+                  <td>{d.deliverable_type}</td>
+                  <td>
+                    {d.revised_planned_month ?? d.planned_month}
+                    {d.is_overdue && <span className="warning-banner"> Overdue</span>}
+                  </td>
+                  <td>{STATUS_LABELS[d.status]}</td>
+                  <td>{d.reporting_period_number ?? '—'}</td>
+                  <td>
+                    {d.cordis_warning && <span className="warning-banner">CORDIS</span>}
+                    <button onClick={() => run(() => deleteDeliverable(d.id))} disabled={isSubmitting}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <EntryBlock
+              columnCount={8}
+              caption="Add a deliverable"
+              details={
+                <>
+                  <DetailField label="Responsible role">
+                    <EntrySelect
+                      value={activeForm.responsible_role_id}
+                      onChange={(e) => setForm({ ...activeForm, responsible_role_id: e.target.value })}
+                      required
+                    >
+                      <option value="">Responsible role…</option>
+                      {personnel_roles.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.role_label}
+                        </option>
+                      ))}
+                    </EntrySelect>
+                  </DetailField>
+                  <DetailField label="Dissemination level">
+                    <EntrySelect
+                      value={activeForm.dissemination_level}
+                      onChange={(e) =>
+                        setForm({ ...activeForm, dissemination_level: e.target.value as DisseminationLevel })
+                      }
+                    >
+                      <option value="Public">Public</option>
+                      <option value="RestrictedToProgramme">Restricted to Programme</option>
+                      <option value="Confidential">Confidential</option>
+                    </EntrySelect>
+                  </DetailField>
+                </>
+              }
+            >
               <td>
-                {d.revised_planned_month ?? d.planned_month}
-                {d.is_overdue && <span className="warning-banner"> Overdue</span>}
+                <span className="subtitle hint">auto</span>
               </td>
-              <td>{STATUS_LABELS[d.status]}</td>
-              <td>{d.reporting_period_number ?? '—'}</td>
               <td>
-                {d.cordis_warning && <span className="warning-banner">CORDIS</span>}
-                <button onClick={() => run(() => deleteDeliverable(d.id))} disabled={isSubmitting}>
-                  Delete
-                </button>
+                <EntryInput
+                  aria-label="Title"
+                  placeholder="Title"
+                  value={activeForm.title}
+                  onChange={(e) => setForm({ ...activeForm, title: e.target.value })}
+                  required
+                />
               </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <form onSubmit={submit} className="inline-form">
-        <input
-          placeholder="Title"
-          value={activeForm.title}
-          onChange={(e) => setForm({ ...activeForm, title: e.target.value })}
-          required
-        />
-        <input
-          type="number"
-          min={1}
-          placeholder="WP"
-          value={activeForm.work_package_id}
-          onChange={(e) => setForm({ ...activeForm, work_package_id: Number(e.target.value) })}
-          required
-        />
-        <select
-          value={activeForm.deliverable_type}
-          onChange={(e) => setForm({ ...activeForm, deliverable_type: e.target.value as DeliverableType })}
-        >
-          {(['Report', 'Dataset', 'Software', 'Prototype', 'Dem', 'Ethics', 'Other'] as DeliverableType[]).map(
-            (t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ),
-          )}
-        </select>
-        <input
-          type="number"
-          min={1}
-          placeholder="Planned month"
-          value={activeForm.planned_month}
-          onChange={(e) => setForm({ ...activeForm, planned_month: Number(e.target.value) })}
-          required
-        />
-        <select
-          value={activeForm.responsible_role_id}
-          onChange={(e) => setForm({ ...activeForm, responsible_role_id: e.target.value })}
-          required
-        >
-          <option value="">Responsible role…</option>
-          {personnel_roles.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.role_label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={activeForm.dissemination_level}
-          onChange={(e) =>
-            setForm({ ...activeForm, dissemination_level: e.target.value as DisseminationLevel })
-          }
-        >
-          <option value="Public">Public</option>
-          <option value="RestrictedToProgramme">Restricted to Programme</option>
-          <option value="Confidential">Confidential</option>
-        </select>
-        <button type="submit" disabled={isSubmitting}>
-          Add Deliverable
-        </button>
-      </form>
+              <td>
+                <EntryInput
+                  type="number"
+                  min={1}
+                  aria-label="Work package"
+                  placeholder="WP"
+                  value={activeForm.work_package_id}
+                  onChange={(e) => setForm({ ...activeForm, work_package_id: Number(e.target.value) })}
+                  required
+                />
+              </td>
+              <td>
+                <EntrySelect
+                  aria-label="Type"
+                  value={activeForm.deliverable_type}
+                  onChange={(e) => setForm({ ...activeForm, deliverable_type: e.target.value as DeliverableType })}
+                >
+                  {(['Report', 'Dataset', 'Software', 'Prototype', 'Dem', 'Ethics', 'Other'] as DeliverableType[]).map(
+                    (t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ),
+                  )}
+                </EntrySelect>
+              </td>
+              <td>
+                <EntryInput
+                  type="number"
+                  min={1}
+                  aria-label="Due month"
+                  placeholder="Month"
+                  value={activeForm.planned_month}
+                  onChange={(e) => setForm({ ...activeForm, planned_month: Number(e.target.value) })}
+                  required
+                />
+              </td>
+              <td>
+                <span className="subtitle hint">Not Started</span>
+              </td>
+              <td />
+              <td>
+                <EntrySubmit disabled={isSubmitting}>Add</EntrySubmit>
+              </td>
+            </EntryBlock>
+          </table>
+        </div>
+      </EntryScope>
     </div>
   );
 }

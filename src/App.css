@@ -349,41 +349,35 @@ tr.row-own {
   padding: 0.4rem 0.6rem;
 }
 
-/* ─── Partners: entry row aligned to the table's own columns ─────────────── */
+/* ─── Entry tables: the add-form lives inside the table, under its own
+ * column headers (see components/EntryTable.tsx) ──────────────────────────── */
 
-.partners-table td {
+.entry-table td {
   vertical-align: top;
 }
 
-/* Fixed minimums so the entry row's dropdowns never truncate, even when
- * the table is empty and columns would otherwise shrink to their headers. */
-.partners-table th,
-.partners-table td {
+.entry-table th,
+.entry-table td {
   padding: 0.5rem 0.4rem;
 }
-.partners-table th:nth-child(1) { min-width: 12rem; }
-.partners-table th:nth-child(2) { min-width: 8.5rem; }
-.partners-table th:nth-child(3) { min-width: 6.5rem; }
-.partners-table th:nth-child(4) { min-width: 8.5rem; }
-.partners-table th:nth-child(5) { min-width: 6.5rem; }
-.partners-table tbody:not(.entry-block) td:nth-child(n + 6) { white-space: nowrap; }
-.partners-table th:last-child { min-width: 8.5rem; white-space: nowrap; }
 
-.partners-table .entry-block td {
+.entry-table .entry-block td {
   border-bottom: none;
 }
 
-.partners-table .entry-caption td {
+.entry-table .entry-caption td {
   padding-top: 1.25rem;
   border-top: 2px solid #334155;
   color: #94a3b8;
 }
 
-.partners-table .entry-row input:not([type='checkbox']),
-.partners-table .entry-row select,
-.partners-table .details-grid input:not([type='checkbox']) {
+.entry-table .entry-row input:not([type='checkbox']),
+.entry-table .entry-row select,
+.entry-table .details-grid input:not([type='checkbox']),
+.entry-table .details-grid select {
   width: 100%;
   box-sizing: border-box;
+  min-width: 6rem;
   background: #1e293b;
   border: 1px solid #334155;
   color: inherit;
@@ -391,11 +385,28 @@ tr.row-own {
   padding: 0.4rem 0.6rem;
 }
 
-.partners-table .entry-row td > input + input {
+.entry-table .entry-row input[type='number'] {
+  min-width: 4.5rem;
+}
+
+.entry-table .entry-row input[type='date'] {
+  min-width: 8.5rem;
+}
+
+/* Two controls sharing one cell (e.g. Name + Short name) stack. */
+.entry-table .entry-row td > input + input,
+.entry-table .entry-row td > select + select,
+.entry-table .entry-row td > input + select,
+.entry-table .entry-row td > select + input {
   margin-top: 0.4rem;
 }
 
-.partners-table .check-cell {
+.entry-table .entry-row td > .hint {
+  display: block;
+  padding-top: 0.45rem;
+}
+
+.entry-table .check-cell {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -403,17 +414,46 @@ tr.row-own {
   padding-top: 0.4rem;
 }
 
-.partners-table .details-grid {
+.entry-table .details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
   gap: 0.75rem 1rem;
   align-items: end;
 }
 
-.partners-table .details-grid label:not(.check-cell) {
+.entry-table .details-grid label:not(.check-cell) {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.8rem;
   color: #94a3b8;
 }
+
+/* The main free-text column (Title / Description) gets the largest share of
+ * the width, so the other columns shrink to what their controls need. */
+.entry-table th.col-wide {
+  width: 32%;
+  min-width: 12rem;
+}
+
+/* A column that only holds a couple of compact controls (e.g. the two Risk
+ * dropdowns) stays at its minimum instead of taking leftover width. */
+.entry-table th.col-compact {
+  width: 1%;
+  min-width: 11rem;
+}
+
+/* Action buttons in the last column never wrap onto two lines. */
+.entry-table td:last-child,
+.entry-table th:last-child {
+  white-space: nowrap;
+}
+
+/* Partners-specific minimum column widths (the widest table: 9 columns in
+ * actual-cost mode must still fit the 1440px minimum window). */
+.partners-table th:nth-child(1) { min-width: 12rem; }
+.partners-table th:nth-child(2) { min-width: 8.5rem; }
+.partners-table th:nth-child(3) { min-width: 6.5rem; }
+.partners-table th:nth-child(4) { min-width: 8.5rem; }
+.partners-table th:nth-child(5) { min-width: 6.5rem; }
+.partners-table tbody:not(.entry-block) td:nth-child(n + 6) { white-space: nowrap; }

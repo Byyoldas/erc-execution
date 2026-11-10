@@ -7,6 +7,7 @@
  */
 
 import { useState } from 'react';
+import { EntryBlock, EntryInput, EntryScope, EntrySubmit } from '../components/EntryTable';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionMutation } from '../hooks/useExecutionMutation';
 import { addReportingPeriod, deleteReportingPeriod, updateReportingPeriod } from '../ipc/commands';
@@ -70,90 +71,110 @@ export function ReportingPeriods() {
         </p>
       )}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Period</th>
-            <th>Months</th>
-            <th>Deadline</th>
-            <th>Deliverables Due</th>
-            <th>Technical Report</th>
-            <th>Financial Report</th>
-            <th>Status</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {reporting_periods.map((p) => (
-            <tr key={p.id}>
-              <td>P{p.period_number}</td>
+      <EntryScope id="period-form" onSubmit={submit}>
+        <div className="matrix-scroll">
+          <table className="entry-table">
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Months</th>
+                <th>Deadline</th>
+                <th>Deliverables Due</th>
+                <th>Technical Report</th>
+                <th>Financial Report</th>
+                <th>Status</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {reporting_periods.map((p) => (
+                <tr key={p.id}>
+                  <td>P{p.period_number}</td>
+                  <td>
+                    M{p.start_month}–M{p.end_month}
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={p.submission_deadline ?? ''}
+                      onChange={(e) => setDeadline(p, e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </td>
+                  <td>
+                    {p.deliverables_submitted} / {p.deliverables_due}
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={p.technical_report_submitted}
+                      onChange={() => toggleFlag(p, 'technical_report_submitted')}
+                      disabled={isSubmitting}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={p.financial_report_submitted}
+                      onChange={() => toggleFlag(p, 'financial_report_submitted')}
+                      disabled={isSubmitting}
+                    />
+                  </td>
+                  <td>{p.status}</td>
+                  <td>
+                    {p.status !== 'Submitted' && (
+                      <button onClick={() => submitPeriod(p)} disabled={isSubmitting}>
+                        Mark Submitted
+                      </button>
+                    )}
+                    <button onClick={() => run(() => deleteReportingPeriod(p.id))} disabled={isSubmitting}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <EntryBlock
+              columnCount={8}
+              caption="Add a reporting period"
+            >
               <td>
-                M{p.start_month}–M{p.end_month}
+                <span className="subtitle hint">new</span>
               </td>
               <td>
-                <input
-                  type="date"
-                  value={p.submission_deadline ?? ''}
-                  onChange={(e) => setDeadline(p, e.target.value)}
-                  disabled={isSubmitting}
+                <EntryInput
+                  type="number"
+                  min={1}
+                  aria-label="Start month"
+                  placeholder="Start month"
+                  value={form.start_month}
+                  onChange={(e) => setForm({ ...form, start_month: Number(e.target.value) })}
+                  required
+                />
+                <EntryInput
+                  type="number"
+                  min={1}
+                  aria-label="End month"
+                  placeholder="End month"
+                  value={form.end_month}
+                  onChange={(e) => setForm({ ...form, end_month: Number(e.target.value) })}
+                  required
                 />
               </td>
+              <td />
+              <td />
+              <td />
+              <td />
               <td>
-                {p.deliverables_submitted} / {p.deliverables_due}
+                <span className="subtitle hint">Open</span>
               </td>
               <td>
-                <input
-                  type="checkbox"
-                  checked={p.technical_report_submitted}
-                  onChange={() => toggleFlag(p, 'technical_report_submitted')}
-                  disabled={isSubmitting}
-                />
+                <EntrySubmit disabled={isSubmitting}>Add</EntrySubmit>
               </td>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={p.financial_report_submitted}
-                  onChange={() => toggleFlag(p, 'financial_report_submitted')}
-                  disabled={isSubmitting}
-                />
-              </td>
-              <td>{p.status}</td>
-              <td>
-                {p.status !== 'Submitted' && (
-                  <button onClick={() => submitPeriod(p)} disabled={isSubmitting}>
-                    Mark Submitted
-                  </button>
-                )}
-                <button onClick={() => run(() => deleteReportingPeriod(p.id))} disabled={isSubmitting}>
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <form onSubmit={submit} className="inline-form">
-        <input
-          type="number"
-          min={1}
-          placeholder="Start month"
-          value={form.start_month}
-          onChange={(e) => setForm({ ...form, start_month: Number(e.target.value) })}
-          required
-        />
-        <input
-          type="number"
-          min={1}
-          placeholder="End month"
-          value={form.end_month}
-          onChange={(e) => setForm({ ...form, end_month: Number(e.target.value) })}
-          required
-        />
-        <button type="submit" disabled={isSubmitting}>
-          Add Period
-        </button>
-      </form>
+            </EntryBlock>
+          </table>
+        </div>
+      </EntryScope>
     </div>
   );
 }

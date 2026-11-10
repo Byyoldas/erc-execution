@@ -20,6 +20,15 @@ import {
   updatePartnerOrganization,
 } from '../ipc/commands';
 import { fmtEur } from '../utils/currency';
+import {
+  DetailField,
+  EntryBlock,
+  EntryCheck,
+  EntryInput,
+  EntryScope,
+  EntrySelect,
+  EntrySubmit,
+} from '../components/EntryTable';
 import { plannedTotalForPartner } from '../utils/consortium';
 import type {
   FundingModel,
@@ -118,13 +127,9 @@ export function Partners() {
       <h1>Partners</h1>
       {error && <p className="error-banner">{error}</p>}
 
-      {/* The entry row below lives inside the table so every input sits
-          directly under its own column; its fields point at this form via
-          the `form` attribute, so Enter still submits. */}
-      <form id="partner-form" onSubmit={submit} />
-
+      <EntryScope id="partner-form" onSubmit={submit}>
       <div className="matrix-scroll">
-        <table className="partners-table">
+        <table className="entry-table partners-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -191,169 +196,141 @@ export function Partners() {
             })}
           </tbody>
 
-          <tbody className="entry-block">
-            <tr className="entry-caption">
-              <td colSpan={columnCount}>
-                {editingId ? <strong>Editing “{form.name || 'partner'}”</strong> : 'Add a partner'}
-              </td>
-            </tr>
-            <tr className="entry-row">
-              <td>
-                <input
-                  form="partner-form"
-                  placeholder="Name"
-                  aria-label="Name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
+          <EntryBlock
+          columnCount={columnCount}
+          caption={editingId ? <strong>Editing “{form.name || 'partner'}”</strong> : 'Add a partner'}
+          details={
+            <>
+              <DetailField label="PIC number">
+                <EntryInput
+                  value={form.pic_number ?? ''}
+                  onChange={(e) => setForm({ ...form, pic_number: e.target.value || null })}
                 />
-                <input
-                  form="partner-form"
-                  placeholder="Short name"
-                  aria-label="Short name"
-                  value={form.short_name ?? ''}
-                  onChange={(e) => setForm({ ...form, short_name: e.target.value || null })}
+              </DetailField>
+              <DetailField label="Contact name">
+                <EntryInput
+                  value={form.contact_name ?? ''}
+                  onChange={(e) => setForm({ ...form, contact_name: e.target.value || null })}
                 />
-              </td>
-              <td>
-                <select
-                  form="partner-form"
-                  aria-label="Role"
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value as PartnerRole })}
-                >
-                  {ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_LABEL[r]}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td>
-                <input
-                  form="partner-form"
-                  placeholder="Country"
-                  aria-label="Country"
-                  value={form.country}
-                  onChange={(e) => setForm({ ...form, country: e.target.value })}
-                  required
+              </DetailField>
+              <DetailField label="Contact email">
+                <EntryInput
+                  value={form.contact_email ?? ''}
+                  onChange={(e) => setForm({ ...form, contact_email: e.target.value || null })}
                 />
-              </td>
-              <td>
-                <select
-                  form="partner-form"
-                  aria-label="Validation status"
-                  value={form.validation_status}
-                  onChange={(e) =>
-                    setForm({ ...form, validation_status: e.target.value as PartnerValidationStatus })
-                  }
-                >
-                  {VALIDATION_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td>
-                <label className="check-cell">
-                  <input
-                    form="partner-form"
-                    type="checkbox"
-                    checked={form.grant_agreement_signed}
-                    onChange={(e) => setForm({ ...form, grant_agreement_signed: e.target.checked })}
-                  />
-                  GA signed
-                </label>
-              </td>
-              <td>
-                {isHorizon ? (
-                  <span className="subtitle">
-                    {isActualCost ? 'From Consortium Budget' : 'From Lump Sum Plan'}
-                  </span>
-                ) : (
-                  <input
-                    form="partner-form"
-                    placeholder="Planned budget share (€)"
-                    aria-label="Planned budget share"
-                    value={form.planned_budget_share_eur ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, planned_budget_share_eur: e.target.value || null })
-                    }
-                  />
-                )}
-              </td>
-              {isActualCost && (
-                <td>
-                  <input
-                    form="partner-form"
-                    placeholder="100"
-                    aria-label="EU funding rate percent"
-                    title="EU funding rate %. Blank means 100."
-                    value={form.funding_rate_pct ?? ''}
-                    onChange={(e) => setForm({ ...form, funding_rate_pct: e.target.value || null })}
-                  />
-                </td>
+              </DetailField>
+              {isHorizon && (
+                <EntryCheck
+                  label="My organization"
+                  title="The one partner whose planned figures come from your Budget file."
+                  checked={form.is_own_organization}
+                  onChange={(e) => setForm({ ...form, is_own_organization: e.target.checked })}
+                />
               )}
-              <td />
-              <td>
-                <button type="submit" form="partner-form" disabled={isSubmitting}>
-                  {editingId ? 'Save Changes' : 'Add Partner'}
-                </button>{' '}
-                {editingId && (
-                  <button type="button" onClick={cancelEdit} disabled={isSubmitting}>
-                    Cancel
-                  </button>
-                )}
-              </td>
-            </tr>
-            <tr className="entry-details">
-              <td colSpan={columnCount}>
-                <div className="details-grid">
-                  <label>
-                    PIC number
-                    <input
-                      form="partner-form"
-                      value={form.pic_number ?? ''}
-                      onChange={(e) => setForm({ ...form, pic_number: e.target.value || null })}
-                    />
-                  </label>
-                  <label>
-                    Contact name
-                    <input
-                      form="partner-form"
-                      value={form.contact_name ?? ''}
-                      onChange={(e) => setForm({ ...form, contact_name: e.target.value || null })}
-                    />
-                  </label>
-                  <label>
-                    Contact email
-                    <input
-                      form="partner-form"
-                      value={form.contact_email ?? ''}
-                      onChange={(e) => setForm({ ...form, contact_email: e.target.value || null })}
-                    />
-                  </label>
-                  {isHorizon && (
-                    <label
-                      className="check-cell"
-                      title="The one partner whose planned figures come from your Budget file."
-                    >
-                      <input
-                        form="partner-form"
-                        type="checkbox"
-                        checked={form.is_own_organization}
-                        onChange={(e) => setForm({ ...form, is_own_organization: e.target.checked })}
-                      />
-                      My organization
-                    </label>
-                  )}
-                </div>
-              </td>
-            </tr>
-          </tbody>
+            </>
+          }
+        >
+          <td>
+            <EntryInput
+              placeholder="Name"
+              aria-label="Name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
+            <EntryInput
+              placeholder="Short name"
+              aria-label="Short name"
+              value={form.short_name ?? ''}
+              onChange={(e) => setForm({ ...form, short_name: e.target.value || null })}
+            />
+          </td>
+          <td>
+            <EntrySelect
+              aria-label="Role"
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value as PartnerRole })}
+            >
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABEL[r]}
+                </option>
+              ))}
+            </EntrySelect>
+          </td>
+          <td>
+            <EntryInput
+              placeholder="Country"
+              aria-label="Country"
+              value={form.country}
+              onChange={(e) => setForm({ ...form, country: e.target.value })}
+              required
+            />
+          </td>
+          <td>
+            <EntrySelect
+              aria-label="Validation status"
+              value={form.validation_status}
+              onChange={(e) =>
+                setForm({ ...form, validation_status: e.target.value as PartnerValidationStatus })
+              }
+            >
+              {VALIDATION_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </EntrySelect>
+          </td>
+          <td>
+            <EntryCheck
+              label="GA signed"
+              checked={form.grant_agreement_signed}
+              onChange={(e) => setForm({ ...form, grant_agreement_signed: e.target.checked })}
+            />
+          </td>
+          <td>
+            {isHorizon ? (
+              <span className="subtitle hint">
+                {isActualCost ? 'From Consortium Budget' : 'From Lump Sum Plan'}
+              </span>
+            ) : (
+              <EntryInput
+                placeholder="Planned budget share (€)"
+                aria-label="Planned budget share"
+                value={form.planned_budget_share_eur ?? ''}
+                onChange={(e) =>
+                  setForm({ ...form, planned_budget_share_eur: e.target.value || null })
+                }
+              />
+            )}
+          </td>
+          {isActualCost && (
+            <td>
+              <EntryInput
+                placeholder="100"
+                aria-label="EU funding rate percent"
+                title="EU funding rate %. Blank means 100."
+                value={form.funding_rate_pct ?? ''}
+                onChange={(e) => setForm({ ...form, funding_rate_pct: e.target.value || null })}
+              />
+            </td>
+          )}
+          <td />
+          <td>
+            <EntrySubmit disabled={isSubmitting}>
+              {editingId ? 'Save Changes' : 'Add Partner'}
+            </EntrySubmit>{' '}
+            {editingId && (
+              <button type="button" onClick={cancelEdit} disabled={isSubmitting}>
+                Cancel
+              </button>
+            )}
+          </td>
+        </EntryBlock>
         </table>
       </div>
+      </EntryScope>
     </div>
   );
 }

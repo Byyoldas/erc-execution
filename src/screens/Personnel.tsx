@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { EntryBlock, EntryInput, EntryScope, EntrySelect, EntrySubmit } from '../components/EntryTable';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionMutation } from '../hooks/useExecutionMutation';
 import { addPerson, deletePerson, addPersonMonthRecord, deletePersonMonthRecord } from '../ipc/commands';
@@ -69,169 +70,205 @@ export function Personnel() {
 
       <section>
         <h2>Roster</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Linked Role</th>
-              <th>Role Period</th>
-              <th>Partner</th>
-              <th>Start</th>
-              <th>End</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {persons.map((p) => {
-              const role = personnel_roles.find((r) => r.id === p.linked_role_id);
-              return (
-              <tr key={p.id}>
-                <td>{p.full_name}</td>
-                <td>{p.linked_role_label}</td>
-                <td>{role ? `Month ${role.start_month}–${role.end_month}` : '—'}</td>
-                <td>{p.partner_organization_name ?? '—'}</td>
-                <td>{p.actual_start_date}</td>
-                <td>{p.actual_end_date ?? '—'}</td>
+        <EntryScope id="person-form" onSubmit={submitPerson}>
+          <div className="matrix-scroll">
+            <table className="entry-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Linked Role</th>
+                  <th>Role Period</th>
+                  <th>Partner</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {persons.map((p) => {
+                  const role = personnel_roles.find((r) => r.id === p.linked_role_id);
+                  return (
+                  <tr key={p.id}>
+                    <td>{p.full_name}</td>
+                    <td>{p.linked_role_label}</td>
+                    <td>{role ? `Month ${role.start_month}–${role.end_month}` : '—'}</td>
+                    <td>{p.partner_organization_name ?? '—'}</td>
+                    <td>{p.actual_start_date}</td>
+                    <td>{p.actual_end_date ?? '—'}</td>
+                    <td>
+                      <button onClick={() => exportTimeDeclaration(p)} disabled={isSubmitting}>
+                        Time Declaration
+                      </button>
+                      <button onClick={() => run(() => deletePerson(p.id))} disabled={isSubmitting}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+              <EntryBlock
+                columnCount={7}
+                caption="Add a person"
+              >
                 <td>
-                  <button onClick={() => exportTimeDeclaration(p)} disabled={isSubmitting}>
-                    Time Declaration
-                  </button>
-                  <button onClick={() => run(() => deletePerson(p.id))} disabled={isSubmitting}>
-                    Delete
-                  </button>
+                  <EntryInput
+                    aria-label="Full name"
+                    placeholder="Full name"
+                    value={personForm.full_name}
+                    onChange={(e) => setPersonForm({ ...personForm, full_name: e.target.value })}
+                    required
+                  />
                 </td>
-              </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        <form onSubmit={submitPerson} className="inline-form">
-          <input
-            placeholder="Full name"
-            value={personForm.full_name}
-            onChange={(e) => setPersonForm({ ...personForm, full_name: e.target.value })}
-            required
-          />
-          <select
-            value={personForm.linked_role_id}
-            onChange={(e) => setPersonForm({ ...personForm, linked_role_id: e.target.value })}
-            required
-          >
-            <option value="">Link to role…</option>
-            {personnel_roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.role_label} (Month {r.start_month}–{r.end_month})
-              </option>
-            ))}
-          </select>
-          {selectedRole && (
-            <span className="subtitle">
-              Planned: Month {selectedRole.start_month}–{selectedRole.end_month}
-            </span>
-          )}
-          <select
-            value={personForm.partner_organization_id ?? ''}
-            onChange={(e) =>
-              setPersonForm({ ...personForm, partner_organization_id: e.target.value || null })
-            }
-          >
-            <option value="">No partner organization</option>
-            {partner_organizations.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.short_name ?? p.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={personForm.actual_start_date}
-            onChange={(e) => setPersonForm({ ...personForm, actual_start_date: e.target.value })}
-            required
-          />
-          <button type="submit" disabled={isSubmitting}>
-            Add Person
-          </button>
-        </form>
+                <td>
+                  <EntrySelect
+                    aria-label="Linked role"
+                    value={personForm.linked_role_id}
+                    onChange={(e) => setPersonForm({ ...personForm, linked_role_id: e.target.value })}
+                    required
+                  >
+                    <option value="">Link to role…</option>
+                    {personnel_roles.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.role_label} (Month {r.start_month}–{r.end_month})
+                      </option>
+                    ))}
+                  </EntrySelect>
+                </td>
+                <td>
+                  {selectedRole && (
+                    <span className="subtitle hint">
+                      Month {selectedRole.start_month}–{selectedRole.end_month}
+                    </span>
+                  )}
+                </td>
+                <td>
+                  <EntrySelect
+                    aria-label="Partner organization"
+                    value={personForm.partner_organization_id ?? ''}
+                    onChange={(e) =>
+                      setPersonForm({ ...personForm, partner_organization_id: e.target.value || null })
+                    }
+                  >
+                    <option value="">No partner organization</option>
+                    {partner_organizations.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.short_name ?? p.name}
+                      </option>
+                    ))}
+                  </EntrySelect>
+                </td>
+                <td>
+                  <EntryInput
+                    type="date"
+                    aria-label="Start date"
+                    value={personForm.actual_start_date}
+                    onChange={(e) => setPersonForm({ ...personForm, actual_start_date: e.target.value })}
+                    required
+                  />
+                </td>
+                <td />
+                <td>
+                  <EntrySubmit disabled={isSubmitting}>Add</EntrySubmit>
+                </td>
+              </EntryBlock>
+            </table>
+          </div>
+        </EntryScope>
       </section>
 
       <section>
         <h2>Person-Month Records</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Person</th>
-              <th>Month</th>
-              <th>Reported</th>
-              <th>Approved</th>
-              <th>Est. Cost (EUR)</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {person_months.map((r) => {
-              const person = persons.find((p) => p.id === r.person_id);
-              return (
-                <tr key={r.id}>
-                  <td>{person?.full_name ?? 'Unknown'}</td>
-                  <td>{r.project_month}</td>
-                  <td>{r.reported_months}</td>
-                  <td>{r.approved_months ?? '—'}</td>
-                  <td>{r.salary_cost_estimate_eur != null ? fmtEur(r.salary_cost_estimate_eur) : '—'}</td>
-                  <td>
-                    <button
-                      onClick={() => run(() => deletePersonMonthRecord(r.id))}
-                      disabled={isSubmitting}
-                    >
-                      Delete
-                    </button>
-                  </td>
+        <EntryScope id="record-form" onSubmit={submitRecord}>
+          <div className="matrix-scroll">
+            <table className="entry-table">
+              <thead>
+                <tr>
+                  <th>Person</th>
+                  <th>Month</th>
+                  <th>Reported</th>
+                  <th>Approved</th>
+                  <th>Est. Cost (EUR)</th>
+                  <th />
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        <form onSubmit={submitRecord} className="inline-form">
-          <select
-            value={recordForm.person_id}
-            onChange={(e) => setRecordForm({ ...recordForm, person_id: e.target.value })}
-            required
-          >
-            <option value="">Person…</option>
-            {persons.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.full_name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            min={1}
-            placeholder="Project month"
-            value={recordForm.project_month}
-            onChange={(e) =>
-              setRecordForm({ ...recordForm, project_month: Number(e.target.value) })
-            }
-            required
-          />
-          <input
-            placeholder="Reported (0–1)"
-            value={recordForm.reported_months}
-            onChange={(e) => setRecordForm({ ...recordForm, reported_months: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Approved (optional)"
-            value={recordForm.approved_months ?? ''}
-            onChange={(e) =>
-              setRecordForm({ ...recordForm, approved_months: e.target.value || null })
-            }
-          />
-          <button type="submit" disabled={isSubmitting}>
-            Add Record
-          </button>
-        </form>
+              </thead>
+              <tbody>
+                {person_months.map((r) => {
+                  const person = persons.find((p) => p.id === r.person_id);
+                  return (
+                    <tr key={r.id}>
+                      <td>{person?.full_name ?? 'Unknown'}</td>
+                      <td>{r.project_month}</td>
+                      <td>{r.reported_months}</td>
+                      <td>{r.approved_months ?? '—'}</td>
+                      <td>{r.salary_cost_estimate_eur != null ? fmtEur(r.salary_cost_estimate_eur) : '—'}</td>
+                      <td>
+                        <button
+                          onClick={() => run(() => deletePersonMonthRecord(r.id))}
+                          disabled={isSubmitting}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <EntryBlock
+                columnCount={6}
+                caption="Add a person-month record"
+              >
+                <td>
+                  <EntrySelect
+                    aria-label="Person"
+                    value={recordForm.person_id}
+                    onChange={(e) => setRecordForm({ ...recordForm, person_id: e.target.value })}
+                    required
+                  >
+                    <option value="">Person…</option>
+                    {persons.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.full_name}
+                      </option>
+                    ))}
+                  </EntrySelect>
+                </td>
+                <td>
+                  <EntryInput
+                    type="number"
+                    min={1}
+                    aria-label="Project month"
+                    placeholder="Month"
+                    value={recordForm.project_month}
+                    onChange={(e) => setRecordForm({ ...recordForm, project_month: Number(e.target.value) })}
+                    required
+                  />
+                </td>
+                <td>
+                  <EntryInput
+                    aria-label="Reported months"
+                    placeholder="Reported (0–1)"
+                    value={recordForm.reported_months}
+                    onChange={(e) => setRecordForm({ ...recordForm, reported_months: e.target.value })}
+                    required
+                  />
+                </td>
+                <td>
+                  <EntryInput
+                    aria-label="Approved months"
+                    placeholder="Approved (optional)"
+                    value={recordForm.approved_months ?? ''}
+                    onChange={(e) => setRecordForm({ ...recordForm, approved_months: e.target.value || null })}
+                  />
+                </td>
+                <td />
+                <td>
+                  <EntrySubmit disabled={isSubmitting}>Add</EntrySubmit>
+                </td>
+              </EntryBlock>
+            </table>
+          </div>
+        </EntryScope>
       </section>
     </div>
   );

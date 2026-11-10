@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { DetailField, EntryBlock, EntryInput, EntryScope, EntrySelect, EntrySubmit } from '../components/EntryTable';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionMutation } from '../hooks/useExecutionMutation';
 import { recordAmendment, deleteAmendment } from '../ipc/commands';
@@ -50,70 +51,94 @@ export function Amendments() {
       <h1>Amendment Management</h1>
       {error && <p className="error-banner">{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Type</th>
-            <th>Title</th>
-            <th>Requested</th>
-            <th>Status</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {amendments.map((a) => (
-            <tr key={a.id}>
-              <td>{a.amendment_number}</td>
-              <td>{TYPE_LABELS[a.amendment_type]}</td>
-              <td>{a.title}</td>
-              <td>{a.requested_date}</td>
-              <td>{a.status}</td>
+      <EntryScope id="amendment-form" onSubmit={submit}>
+        <div className="matrix-scroll">
+          <table className="entry-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Type</th>
+                <th className="col-wide">Title</th>
+                <th>Requested</th>
+                <th>Status</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {amendments.map((a) => (
+                <tr key={a.id}>
+                  <td>{a.amendment_number}</td>
+                  <td>{TYPE_LABELS[a.amendment_type]}</td>
+                  <td>{a.title}</td>
+                  <td>{a.requested_date}</td>
+                  <td>{a.status}</td>
+                  <td>
+                    <button onClick={() => run(() => deleteAmendment(a.id))} disabled={isSubmitting}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <EntryBlock
+              columnCount={6}
+              caption="Record an amendment"
+              details={
+                <>
+                  <DetailField label="Description">
+                    <EntryInput
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      required
+                    />
+                  </DetailField>
+                </>
+              }
+            >
               <td>
-                <button onClick={() => run(() => deleteAmendment(a.id))} disabled={isSubmitting}>
-                  Delete
-                </button>
+                <span className="subtitle hint">auto</span>
               </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <form onSubmit={submit} className="inline-form">
-        <select
-          value={form.amendment_type}
-          onChange={(e) =>
-            setForm({ ...form, amendment_type: e.target.value as AmendmentType })
-          }
-        >
-          {Object.entries(TYPE_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <input
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-          required
-        />
-        <input
-          type="date"
-          value={form.requested_date}
-          onChange={(e) => setForm({ ...form, requested_date: e.target.value })}
-          required
-        />
-        <button type="submit" disabled={isSubmitting}>
-          Record Amendment
-        </button>
-      </form>
+              <td>
+                <EntrySelect
+                  aria-label="Amendment type"
+                  value={form.amendment_type}
+                  onChange={(e) => setForm({ ...form, amendment_type: e.target.value as AmendmentType })}
+                >
+                  {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </EntrySelect>
+              </td>
+              <td>
+                <EntryInput
+                  aria-label="Title"
+                  placeholder="Title"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  required
+                />
+              </td>
+              <td>
+                <EntryInput
+                  type="date"
+                  aria-label="Requested date"
+                  value={form.requested_date}
+                  onChange={(e) => setForm({ ...form, requested_date: e.target.value })}
+                  required
+                />
+              </td>
+              <td>
+                <span className="subtitle hint">Requested</span>
+              </td>
+              <td>
+                <EntrySubmit disabled={isSubmitting}>Add</EntrySubmit>
+              </td>
+            </EntryBlock>
+          </table>
+        </div>
+      </EntryScope>
     </div>
   );
 }

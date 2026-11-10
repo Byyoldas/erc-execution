@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { DetailField, EntryBlock, EntryInput, EntryScope, EntrySelect, EntrySubmit } from '../components/EntryTable';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionMutation } from '../hooks/useExecutionMutation';
 import { addRiskEntry, deleteRiskEntry } from '../ipc/commands';
@@ -68,108 +69,139 @@ export function RiskRegister() {
       </div>
 
       {view === 'matrix' ? (
-        <table>
-          <thead>
-            <tr>
-              <th>Probability \ Impact</th>
-              {LEVELS.map((impact) => (
-                <th key={impact}>{impact}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[...LEVELS].reverse().map((probability) => (
-              <tr key={probability}>
-                <td>{probability}</td>
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th>Probability \ Impact</th>
                 {LEVELS.map((impact) => (
-                  <td key={impact}>{matrixCount(impact, probability) || '—'}</td>
+                  <th key={impact}>{impact}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {[...LEVELS].reverse().map((probability) => (
+                <tr key={probability}>
+                  <td>{probability}</td>
+                  {LEVELS.map((impact) => (
+                    <td key={impact}>{matrixCount(impact, probability) || '—'}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="subtitle">
+            To add a risk, switch to the <button onClick={() => setView('list')}>List</button> view.
+          </p>
+        </>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Score</th>
-              <th>Title</th>
-              <th>WP</th>
-              <th>Status</th>
-              <th>Review Date</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((r) => (
-              <tr key={r.id}>
+        <EntryScope id="risk-form" onSubmit={submit}>
+          <div className="matrix-scroll">
+            <table className="entry-table">
+              <thead>
+                <tr>
+                  <th className="col-compact">Score</th>
+                  <th className="col-wide">Title</th>
+                  <th>WP</th>
+                  <th>Status</th>
+                  <th>Review Date</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      {PRIORITY_ICON[r.priority]} {r.risk_score}
+                    </td>
+                    <td>{r.title}</td>
+                    <td>{r.work_package_id ? `WP${r.work_package_id}` : '—'}</td>
+                    <td>{r.status}</td>
+                    <td>{r.review_date ?? '—'}</td>
+                    <td>
+                      <button onClick={() => run(() => deleteRiskEntry(r.id))} disabled={isSubmitting}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <EntryBlock
+                columnCount={6}
+                caption="Add a risk"
+                details={
+                  <>
+                    <DetailField label="Description">
+                      <EntryInput
+                        value={form.description}
+                        onChange={(e) => setForm({ ...form, description: e.target.value })}
+                        required
+                      />
+                    </DetailField>
+                    <DetailField label="Identified date">
+                      <EntryInput
+                        type="date"
+                        value={form.identified_date}
+                        onChange={(e) => setForm({ ...form, identified_date: e.target.value })}
+                        required
+                      />
+                    </DetailField>
+                  </>
+                }
+              >
                 <td>
-                  {PRIORITY_ICON[r.priority]} {r.risk_score}
+                  <EntrySelect
+                    aria-label="Probability"
+                    value={form.probability}
+                    onChange={(e) => setForm({ ...form, probability: e.target.value as Level })}
+                  >
+                    {LEVELS.map((l) => (
+                      <option key={l} value={l}>
+                        Probability: {l}
+                      </option>
+                    ))}
+                  </EntrySelect>
+                  <EntrySelect
+                    aria-label="Impact"
+                    value={form.impact}
+                    onChange={(e) => setForm({ ...form, impact: e.target.value as Level })}
+                  >
+                    {LEVELS.map((l) => (
+                      <option key={l} value={l}>
+                        Impact: {l}
+                      </option>
+                    ))}
+                  </EntrySelect>
                 </td>
-                <td>{r.title}</td>
-                <td>{r.work_package_id ? `WP${r.work_package_id}` : '—'}</td>
-                <td>{r.status}</td>
-                <td>{r.review_date ?? '—'}</td>
                 <td>
-                  <button onClick={() => run(() => deleteRiskEntry(r.id))} disabled={isSubmitting}>
-                    Delete
-                  </button>
+                  <EntryInput
+                    aria-label="Title"
+                    placeholder="Title"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    required
+                  />
                 </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                <td />
+                <td>
+                  <span className="subtitle hint">Open</span>
+                </td>
+                <td>
+                  <EntryInput
+                    type="date"
+                    aria-label="Review date"
+                    value={form.review_date ?? ''}
+                    onChange={(e) => setForm({ ...form, review_date: e.target.value || null })}
+                  />
+                </td>
+                <td>
+                  <EntrySubmit disabled={isSubmitting}>Add</EntrySubmit>
+                </td>
+              </EntryBlock>
+            </table>
+          </div>
+        </EntryScope>
       )}
-
-      <form onSubmit={submit} className="inline-form">
-        <input
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-          required
-        />
-        <select
-          value={form.probability}
-          onChange={(e) => setForm({ ...form, probability: e.target.value as Level })}
-        >
-          {LEVELS.map((l) => (
-            <option key={l} value={l}>
-              Probability: {l}
-            </option>
-          ))}
-        </select>
-        <select
-          value={form.impact}
-          onChange={(e) => setForm({ ...form, impact: e.target.value as Level })}
-        >
-          {LEVELS.map((l) => (
-            <option key={l} value={l}>
-              Impact: {l}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={form.identified_date}
-          onChange={(e) => setForm({ ...form, identified_date: e.target.value })}
-          required
-        />
-        <input
-          type="date"
-          placeholder="Review date"
-          value={form.review_date ?? ''}
-          onChange={(e) => setForm({ ...form, review_date: e.target.value || null })}
-        />
-        <button type="submit" disabled={isSubmitting}>
-          Add Risk
-        </button>
-      </form>
     </div>
   );
 }
