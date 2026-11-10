@@ -87,30 +87,31 @@ pub fn calculate_consortium_budget(
 
     for partner in partners {
         let mut amounts = zero_amounts();
-        let source;
-        let funding_rate_pct;
-        let requested_eu_contribution_eur;
 
-        if partner.is_own_organization {
-            source = BudgetRowSource::BudgetFile;
-            amounts.insert(CostCategory::A, own.a);
-            amounts.insert(CostCategory::B, own.b);
-            amounts.insert(CostCategory::C1, own.c1);
-            amounts.insert(CostCategory::C2, own.c2);
-            amounts.insert(CostCategory::C3, own.c3);
-            amounts.insert(CostCategory::E, own.e);
-            funding_rate_pct = None;
-            requested_eu_contribution_eur = own.requested_eu_contribution;
-        } else {
-            source = BudgetRowSource::Entered;
-            for line in lines.iter().filter(|l| l.partner_id == partner.id) {
-                *amounts.entry(line.category).or_insert(Decimal::ZERO) += line.amount_eur;
-            }
-            let rate = partner.funding_rate_pct.unwrap_or(Decimal::ONE_HUNDRED);
-            funding_rate_pct = Some(rate);
-            requested_eu_contribution_eur =
-                (amounts.values().sum::<Decimal>() * rate / Decimal::ONE_HUNDRED).round_dp(2);
-        }
+        let (source, funding_rate_pct, requested_eu_contribution_eur) =
+            if partner.is_own_organization {
+                amounts.insert(CostCategory::A, own.a);
+                amounts.insert(CostCategory::B, own.b);
+                amounts.insert(CostCategory::C1, own.c1);
+                amounts.insert(CostCategory::C2, own.c2);
+                amounts.insert(CostCategory::C3, own.c3);
+                amounts.insert(CostCategory::E, own.e);
+                (
+                    BudgetRowSource::BudgetFile,
+                    None,
+                    own.requested_eu_contribution,
+                )
+            } else {
+                for line in lines.iter().filter(|l| l.partner_id == partner.id) {
+                    *amounts.entry(line.category).or_insert(Decimal::ZERO) += line.amount_eur;
+                }
+                let rate = partner.funding_rate_pct.unwrap_or(Decimal::ONE_HUNDRED);
+                (
+                    BudgetRowSource::Entered,
+                    Some(rate),
+                    (amounts.values().sum::<Decimal>() * rate / Decimal::ONE_HUNDRED).round_dp(2),
+                )
+            };
 
         let total_eligible_eur: Decimal = amounts.values().sum();
         for (category, amount) in &amounts {
