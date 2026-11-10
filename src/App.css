@@ -109,6 +109,11 @@
   margin: -0.75rem 0 0.4rem;
 }
 
+.funding-model-form {
+  margin: 0.9rem 0 0.4rem;
+}
+
+.funding-model-form label,
 .project-start-date-form label {
   font-size: 0.9rem;
   color: #94a3b8;
@@ -270,10 +275,36 @@ th, td {
 
 /* ─── M-25: funding model & consortium planning matrices ─────────────────── */
 
+.matrix-scroll {
+  overflow-x: auto;
+}
+
+/* Compact on purpose: the actual-cost matrix has 11 columns and must fit
+ * the app's 1440px minimum window width without scrolling. */
+.matrix {
+  font-size: 0.8rem;
+}
+
+.matrix th,
+.matrix td {
+  padding: 0.4rem 0.4rem;
+}
+
+.matrix th:first-child,
+.matrix td:first-child {
+  min-width: 8.5rem;
+}
+
 .matrix th.num,
 .matrix td.num {
   text-align: right;
   white-space: nowrap;
+}
+
+/* Long column titles ("Requested EU contribution") wrap instead of
+ * widening the whole matrix. */
+.matrix thead th.num {
+  white-space: normal;
 }
 
 .matrix tfoot th {
@@ -287,13 +318,14 @@ tr.row-own {
 }
 
 .amount-cell {
-  width: 7.5rem;
+  width: 5.25rem;
   text-align: right;
   background: #1e293b;
   border: 1px solid #334155;
   color: inherit;
+  font-size: inherit;
   border-radius: 4px;
-  padding: 0.3rem 0.5rem;
+  padding: 0.25rem 0.4rem;
 }
 
 .amount-cell-invalid {

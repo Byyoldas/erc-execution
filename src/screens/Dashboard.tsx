@@ -79,7 +79,7 @@ export function Dashboard() {
           </button>
           {error && <span className="save-status-error">{error}</span>}
         </div>
-        <div className="inline-form project-start-date-form">
+        <div className="inline-form funding-model-form">
           <label htmlFor="funding_model">Funding Model</label>
           <select
             id="funding_model"

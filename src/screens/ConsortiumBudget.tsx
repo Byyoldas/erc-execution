@@ -49,73 +49,75 @@ export function ConsortiumBudget() {
             </p>
           )}
 
+          <div className="matrix-scroll">
           <table className="matrix">
-            <thead>
-              <tr>
-                <th>Partner</th>
-                {COST_CATEGORIES.map((c) => (
-                  <th key={c} className="num" title={COST_CATEGORY_LABEL[c]}>
-                    {c}
-                  </th>
-                ))}
-                <th className="num">Total eligible</th>
-                <th className="num">Funding rate</th>
-                <th className="num">Requested EU contribution</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.partner_id} className={row.is_own_organization ? 'row-own' : undefined}>
-                  <td>
-                    {row.partner_name}
-                    {row.is_own_organization && (
-                      <div className="subtitle">Your organization — from the Budget file</div>
-                    )}
-                  </td>
+              <thead>
+                <tr>
+                  <th>Partner</th>
                   {COST_CATEGORIES.map((c) => (
-                    <td key={c} className="num">
-                      {row.source === 'BudgetFile' ? (
-                        isZeroAmount(row.amounts[c]) ? (
-                          '—'
-                        ) : (
-                          fmtEur(row.amounts[c])
-                        )
-                      ) : (
-                        <AmountCell
-                          value={row.amounts[c]}
-                          ariaLabel={`${row.partner_name} ${c} (${COST_CATEGORY_LABEL[c]})`}
-                          disabled={isSubmitting}
-                          onCommit={(amount) =>
-                            run(() => setPartnerBudgetAmount(row.partner_id, c, amount))
-                          }
-                        />
+                    <th key={c} className="num" title={COST_CATEGORY_LABEL[c]}>
+                      {c}
+                    </th>
+                  ))}
+                  <th className="num">Total eligible</th>
+                  <th className="num">Funding rate</th>
+                  <th className="num">Requested EU contribution</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.partner_id} className={row.is_own_organization ? 'row-own' : undefined}>
+                    <td>
+                      {row.partner_name}
+                      {row.is_own_organization && (
+                        <div className="subtitle">Your organization — from the Budget file</div>
                       )}
                     </td>
-                  ))}
-                  <td className="num">
-                    <strong>{fmtEur(row.total_eligible_eur)}</strong>
-                  </td>
-                  <td className="num">
-                    {row.funding_rate_pct === null ? '—' : `${row.funding_rate_pct}%`}
-                  </td>
-                  <td className="num">{fmtEur(row.requested_eu_contribution_eur)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th>Consortium total</th>
-                {COST_CATEGORIES.map((c) => (
-                  <th key={c} className="num">
-                    {isZeroAmount(total_amounts[c]) ? '—' : fmtEur(total_amounts[c])}
-                  </th>
+                    {COST_CATEGORIES.map((c) => (
+                      <td key={c} className="num">
+                        {row.source === 'BudgetFile' ? (
+                          isZeroAmount(row.amounts[c]) ? (
+                            '—'
+                          ) : (
+                            fmtEur(row.amounts[c])
+                          )
+                        ) : (
+                          <AmountCell
+                            value={row.amounts[c]}
+                            ariaLabel={`${row.partner_name} ${c} (${COST_CATEGORY_LABEL[c]})`}
+                            disabled={isSubmitting}
+                            onCommit={(amount) =>
+                              run(() => setPartnerBudgetAmount(row.partner_id, c, amount))
+                            }
+                          />
+                        )}
+                      </td>
+                    ))}
+                    <td className="num">
+                      <strong>{fmtEur(row.total_eligible_eur)}</strong>
+                    </td>
+                    <td className="num">
+                      {row.funding_rate_pct === null ? '—' : `${row.funding_rate_pct}%`}
+                    </td>
+                    <td className="num">{fmtEur(row.requested_eu_contribution_eur)}</td>
+                  </tr>
                 ))}
-                <th className="num">{fmtEur(total_eligible_eur)}</th>
-                <th />
-                <th className="num">{fmtEur(total_requested_eu_contribution_eur)}</th>
-              </tr>
-            </tfoot>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th>Consortium total</th>
+                  {COST_CATEGORIES.map((c) => (
+                    <th key={c} className="num">
+                      {isZeroAmount(total_amounts[c]) ? '—' : fmtEur(total_amounts[c])}
+                    </th>
+                  ))}
+                  <th className="num">{fmtEur(total_eligible_eur)}</th>
+                  <th />
+                  <th className="num">{fmtEur(total_requested_eu_contribution_eur)}</th>
+                </tr>
+              </tfoot>
           </table>
+        </div>
 
           <p className="subtitle">
             A Personnel · B Subcontracting · C1 Travel · C2 Equipment · C3 Other goods &amp;

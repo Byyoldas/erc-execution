@@ -49,6 +49,11 @@ closing the window. Three mechanisms cover you:
 The left sidebar lists every module. Modules that aren't relevant yet
 (reserved for a future release) appear greyed out and aren't clickable.
 
+Horizon Europe projects get one extra entry right after **Partners**:
+**Consortium Budget** (actual-cost projects) or **Lump Sum Plan**
+(lump-sum projects). ERC projects see no extra entry. Which one you get
+depends on the **Funding Model** you pick on the Dashboard (§3).
+
 In the top-right corner, a **▲ Warnings: N** button is always visible once
 a project is open — this is the notification tray (§15). Click it to see
 every active warning across the whole project; clicking a warning jumps
@@ -68,6 +73,14 @@ The landing screen after opening a project. Shows:
   separate Call Opening Date, which only affects the EU travel rate
   version) still only lives in — and is only editable from — ERC Budget's
   Project Setup screen.
+- **Funding Model** — a selector right under the Project Start Date:
+  **ERC grant** (the default, and what every existing project uses),
+  **Horizon Europe — actual costs**, or **Horizon Europe — lump sum**. It
+  only decides which consortium-planning screen appears in the sidebar
+  and which fields the Partners screen shows. Switching it never deletes
+  or changes any data — switch back and everything is still there. Unlike
+  the Project Start Date, this is stored in the execution data only and
+  is never written to your Budget file.
 - **Planned vs. Actual** — every ERC budget category (A Personnel, B
   Subcontracting, C1 Travel, C2 Equipment, C3 Other Direct Costs, E
   Indirect) side by side, planned figure next to the actual figure derived
@@ -284,6 +297,18 @@ file keeps about each partner, not a shared workspace they edit themselves
 - **Adding a partner**: name, country, and role (Coordinator / Beneficiary
   / Associated Partner) are required; everything else is optional. Only
   one partner can be marked Coordinator at a time.
+- **Editing a partner**: click **Edit** on its row. The form fills in with
+  its current values and the button becomes **Save Changes** (or
+  **Cancel** to leave without saving).
+- **Horizon Europe projects only** (see Funding Model, §3) the form has
+  two more fields: **My organization** — tick it on the one partner that
+  is *your own* organization. Your Budget file describes only your
+  organization, so this tells the app that the Budget file's figures
+  belong to that partner. Only one partner can be marked. And, for
+  actual-cost projects, **EU funding rate %** — the share of that
+  partner's eligible costs the EU reimburses (leave blank for 100%).
+  Your own organization's rate isn't used; its EU contribution comes from
+  the Budget file.
 - **Linking people to a partner**: on the Personnel screen, each person's
   add/edit form has a "Partner Organization" dropdown, next to the
   free-text Institution field (which stays available if you don't want to
@@ -296,14 +321,74 @@ file keeps about each partner, not a shared workspace they edit themselves
   partner's personnel-only actual exceeds their declared budget share by
   more than 10% — read as "over on personnel costs alone," not a signal
   the partner is over their real total budget.
+- **Planned column**: shows the planned total that applies under the
+  current Funding Model — the hand-entered budget share for ERC projects,
+  the partner's total eligible costs from the Consortium Budget for
+  actual-cost projects, or its total across all work packages from the
+  Lump Sum Plan for lump-sum projects.
 - **Deleting a partner**: blocked while anyone is still linked to them —
   the row shows who and a shortcut to the Personnel screen to reassign or
-  clear the link first.
+  clear the link first. Once nobody is linked, deleting also removes that
+  partner's planned budget (its Consortium Budget row and Lump Sum Plan
+  shares).
 - The Dashboard's **Consortium** panel (appears once at least one partner
   exists) mirrors this same planned-vs-actual view, plus how many partners
   are validated.
 
-## 19. Frequently Asked Questions
+## 19. Consortium Budget (Horizon Europe, actual costs)
+
+Appears in the sidebar when the Funding Model (§3) is **Horizon Europe —
+actual costs**. A table of every partner against every cost category
+(A Personnel, B Subcontracting, C1 Travel, C2 Equipment, C3 Other goods &
+services, D Other categories, E Indirect), with each partner's total
+eligible cost, EU funding rate, and requested EU contribution, and a
+consortium total at the bottom.
+
+- **Your own organization's row** is filled in automatically from your
+  Budget file and can't be edited here — that keeps it from drifting away
+  from the Budget file. It's the partner you ticked **My organization**
+  on (§18). If no partner is ticked, a warning explains that your Budget
+  file's figures are missing from the totals.
+- **Every other partner's row** is editable. Type an amount into any cell
+  and press **Enter** or click elsewhere to save it. Clear a cell to
+  remove the amount. **Esc** discards what you've typed. Amounts are
+  euros, with up to two decimals.
+- **Enter the figures as listed in the Grant Agreement's budget table.**
+  That includes **E (Indirect)**: this release does not calculate the 25%
+  for you or check it against the other categories.
+- Requested EU contribution = total eligible × the partner's funding rate
+  (100% if blank), rounded to the cent.
+
+These are **planned** figures. Tracking what other partners actually
+spend is not in this release.
+
+## 20. Lump Sum Plan (Horizon Europe, lump sum)
+
+Appears in the sidebar when the Funding Model (§3) is **Horizon Europe —
+lump sum**. A table of work packages (rows) against partners (columns)
+holding each partner's planned lump-sum share of each work package, with
+totals per work package, per partner, and overall.
+
+- **Every cell is editable, including your own organization's** — your
+  Budget file has no lump-sum structure to read it from. Type an amount
+  and press **Enter** or click elsewhere to save; clear a cell to remove
+  it; **Esc** discards what you've typed.
+- Work packages come from your Budget file. If the Grant Agreement has
+  more work packages than the Budget file declares, raise the work
+  package count in ERC Budget first.
+
+These are **planned** shares. Tracking whether work packages were
+completed, and what each partner is therefore owed, is not in this
+release.
+
+## 21. Frequently Asked Questions
+
+**My Budget file only covers my own organization — how do I track a whole consortium?**
+Set the Funding Model on the Dashboard (§3), add every partner on the
+Partners screen, tick **My organization** on yours, then fill in the
+Consortium Budget (§19) or Lump Sum Plan (§20). Your organization's
+figures come from the Budget file; the other partners' you type in from
+the Grant Agreement.
 
 **Can I create a new project in ERC Execution?**
 No. Every project starts in the Budget Application; ERC Execution only

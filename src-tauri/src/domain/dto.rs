@@ -30,9 +30,10 @@ pub struct ProjectInfoDto {
     pub work_package_count: u8,
     /// `None` when never set in the Budget App -- `current_project_month`
     /// then falls back to month 1 (see `progress_engine::
-    /// derive_current_project_month`). Read-only here: this app has never
-    /// mutated any `ProjectConfig` field, and this isn't the exception --
-    /// set or change it in ERC Budget, not here. Deliberately not
+    /// derive_current_project_month`). Editable from the Dashboard via
+    /// `commands::project::set_project_start_date` -- the one deliberate
+    /// exception to this app's "read Budget App data, never write it back"
+    /// rule; every other `ProjectConfig` field stays read-only. Deliberately not
     /// `call_opening_date` (a distinct field, an EC-calendar fact used only
     /// to pick the EU travel rate version) -- this is the real project
     /// timeline anchor.

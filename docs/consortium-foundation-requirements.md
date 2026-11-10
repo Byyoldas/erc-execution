@@ -1,6 +1,6 @@
 # Consortium Foundation (Phase 0) — Functional & Technical Specification
 
-**Status:** Proposed — not yet built
+**Status:** Built (v1.2.0 candidate)
 **Extends:** `partner-organizations-requirements.md` (M-24), as **M-25 — Funding Model & Consortium Planned Budget**
 **Date:** 2026-11-10
 

@@ -368,7 +368,7 @@ mod tests {
     #[test]
     fn test_budget_own_organization_row_comes_from_budget_file() {
         let own = make_partner("Own University", true, None);
-        let result = calculate_consortium_budget(&[own.clone()], &[], &own_figures());
+        let result = calculate_consortium_budget(std::slice::from_ref(&own), &[], &own_figures());
         let row = &result.rows[0];
 
         assert_eq!(row.source, BudgetRowSource::BudgetFile);

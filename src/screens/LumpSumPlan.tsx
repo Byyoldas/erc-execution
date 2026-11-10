@@ -40,56 +40,58 @@ export function LumpSumPlan() {
       ) : plan.rows.length === 0 ? (
         <p className="warning-banner">This project has no work packages to plan against.</p>
       ) : (
-        <table className="matrix">
-          <thead>
-            <tr>
-              <th>Work package</th>
-              {partners.map((p) => (
-                <th key={p.id} className="num" title={p.name}>
-                  {p.short_name ?? p.name}
-                  {p.is_own_organization && <div className="subtitle">you</div>}
-                </th>
-              ))}
-              <th className="num">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {plan.rows.map((row) => (
-              <tr key={row.work_package_id}>
-                <td>
-                  WP{row.work_package_id}
-                  {row.work_package_name && <div className="subtitle">{row.work_package_name}</div>}
-                </td>
-                {row.cells.map((cell, index) => (
-                  <td key={cell.partner_id} className="num">
-                    <AmountCell
-                      value={cell.amount_eur}
-                      ariaLabel={`WP${row.work_package_id} ${partners[index]?.name ?? 'partner'}`}
-                      disabled={isSubmitting}
-                      onCommit={(amount) =>
-                        run(() => setLumpSumShare(row.work_package_id, cell.partner_id, amount))
-                      }
-                    />
-                  </td>
+        <div className="matrix-scroll">
+          <table className="matrix">
+            <thead>
+              <tr>
+                <th>Work package</th>
+                {partners.map((p) => (
+                  <th key={p.id} className="num" title={p.name}>
+                    {p.short_name ?? p.name}
+                    {p.is_own_organization && <div className="subtitle">you</div>}
+                  </th>
                 ))}
-                <td className="num">
-                  <strong>{fmtEur(row.total_eur)}</strong>
-                </td>
+                <th className="num">Total</th>
               </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th>Partner total</th>
-              {plan.partner_totals.map((t) => (
-                <th key={t.partner_id} className="num">
-                  {fmtEur(t.amount_eur)}
-                </th>
+            </thead>
+            <tbody>
+              {plan.rows.map((row) => (
+                <tr key={row.work_package_id}>
+                  <td>
+                    WP{row.work_package_id}
+                    {row.work_package_name && <div className="subtitle">{row.work_package_name}</div>}
+                  </td>
+                  {row.cells.map((cell, index) => (
+                    <td key={cell.partner_id} className="num">
+                      <AmountCell
+                        value={cell.amount_eur}
+                        ariaLabel={`WP${row.work_package_id} ${partners[index]?.name ?? 'partner'}`}
+                        disabled={isSubmitting}
+                        onCommit={(amount) =>
+                          run(() => setLumpSumShare(row.work_package_id, cell.partner_id, amount))
+                        }
+                      />
+                    </td>
+                  ))}
+                  <td className="num">
+                    <strong>{fmtEur(row.total_eur)}</strong>
+                  </td>
+                </tr>
               ))}
-              <th className="num">{fmtEur(plan.grand_total_eur)}</th>
-            </tr>
-          </tfoot>
-        </table>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th>Partner total</th>
+                {plan.partner_totals.map((t) => (
+                  <th key={t.partner_id} className="num">
+                    {fmtEur(t.amount_eur)}
+                  </th>
+                ))}
+                <th className="num">{fmtEur(plan.grand_total_eur)}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       )}
     </div>
   );
