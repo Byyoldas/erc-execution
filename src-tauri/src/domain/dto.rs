@@ -7,14 +7,16 @@
 //! `docs/executer/execution-architecture.md` §11.
 
 use super::enums::{
-    AmendmentStatus, AmendmentType, DeliverableStatus, DeliverableType, DisseminationLevel,
-    EntryStatus, IssueStatus, Level, MilestoneStatus, NavigationTarget, PartnerRole,
-    PartnerValidationStatus, ReportingPeriodStatus, RiskStatus, WarningSeverity, WpStatus,
+    AmendmentStatus, AmendmentType, CostCategory, DeliverableStatus, DeliverableType,
+    DisseminationLevel, EntryStatus, IssueStatus, Level, MilestoneStatus, NavigationTarget,
+    PartnerRole, PartnerValidationStatus, ReportingPeriodStatus, RiskStatus, WarningSeverity,
+    WpStatus,
 };
 use erc_core::domain::dto::{BudgetSummaryDto, CfsStatus};
 use erc_core::domain::entities::RoleType;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 /// Read-only administrative facts about the project, sourced from the
@@ -637,4 +639,68 @@ pub struct PartnerOrganizationDetailDto {
     pub linked_person_count: u32,
     /// BR-PO-06, advisory only.
     pub over_budget_warning: bool,
+}
+
+// ─── M-25: Funding Model & Consortium Planned Budget ─────────────────────────────
+
+/// Where a `ConsortiumBudgetRowDto`'s figures come from. The UI makes
+/// `BudgetFile` rows read-only (BR-CB-02).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BudgetRowSource {
+    BudgetFile,
+    Entered,
+}
+
+/// One partner's planned budget across every cost category (actual-cost
+/// model). `amounts` always holds all seven categories (zero when unset), so
+/// the UI can render a full matrix without existence checks.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ConsortiumBudgetRowDto {
+    pub partner_id: Uuid,
+    pub partner_name: String,
+    pub is_own_organization: bool,
+    pub source: BudgetRowSource,
+    pub amounts: BTreeMap<CostCategory, Decimal>,
+    pub total_eligible_eur: Decimal,
+    /// Effective EU funding rate (the partner's own, or 100 when unset).
+    /// `None` for the own organization: its contribution is taken from the
+    /// Budget file, not calculated from a rate here.
+    pub funding_rate_pct: Option<Decimal>,
+    pub requested_eu_contribution_eur: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ConsortiumBudgetDto {
+    pub rows: Vec<ConsortiumBudgetRowDto>,
+    /// Sum of every row, per category and overall.
+    pub total_amounts: BTreeMap<CostCategory, Decimal>,
+    pub total_eligible_eur: Decimal,
+    pub total_requested_eu_contribution_eur: Decimal,
+    /// `false` means no partner is marked as the own organization, so the
+    /// Budget file's figures are not in these totals. The UI warns about it.
+    pub has_own_organization: bool,
+}
+
+/// One partner's planned lump-sum share of one work package.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LumpSumCellDto {
+    pub partner_id: Uuid,
+    pub amount_eur: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LumpSumPlanRowDto {
+    pub work_package_id: u8,
+    pub work_package_name: String,
+    /// One cell per partner, in partner order (zero when unset).
+    pub cells: Vec<LumpSumCellDto>,
+    pub total_eur: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LumpSumPlanDto {
+    pub rows: Vec<LumpSumPlanRowDto>,
+    /// One entry per partner, in partner order.
+    pub partner_totals: Vec<LumpSumCellDto>,
+    pub grand_total_eur: Decimal,
 }
