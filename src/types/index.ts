@@ -408,6 +408,9 @@ export interface ExecutionProjectSummaryDto {
   issues: IssueEntryDetailDto[];
   warnings: WarningDto[];
   partner_organizations: PartnerOrganizationDetailDto[];
+  funding_model: FundingModel;
+  consortium_budget: ConsortiumBudgetDto;
+  lump_sum_plan: LumpSumPlanDto;
 }
 
 // ─── M-12: Risk Register ────────────────────────────────────────────────────────
@@ -517,7 +520,9 @@ export type ExecutionScreen =
   | 'risk-register'
   | 'issue-log'
   | 'reports-export'
-  | 'partners';
+  | 'partners'
+  | 'consortium-budget'
+  | 'lump-sum-plan';
 
 // ─── M-24: Partner Organization Management ───────────────────────────────────────
 
@@ -537,6 +542,10 @@ export interface PartnerOrganizationInputDto {
   grant_agreement_signed: boolean;
   planned_budget_share_eur: string | null;
   notes: string | null;
+  /** M-25: marks the partner whose planned figures come from the Budget file. */
+  is_own_organization: boolean;
+  /** M-25: 0-100, null means 100. */
+  funding_rate_pct: string | null;
 }
 
 export interface PartnerOrganizationDetailDto {
@@ -552,7 +561,62 @@ export interface PartnerOrganizationDetailDto {
   grant_agreement_signed: boolean;
   planned_budget_share_eur: string | null;
   notes: string | null;
+  is_own_organization: boolean;
+  funding_rate_pct: string | null;
   actual_personnel_cost_eur: string;
   linked_person_count: number;
   over_budget_warning: boolean;
+}
+
+// ─── M-25: Funding Model & Consortium Planned Budget ─────────────────────────────
+
+export type FundingModel = 'Erc' | 'HorizonActualCost' | 'HorizonLumpSum';
+
+/** Horizon actual-cost budget categories, in budget-table order. */
+export type CostCategory = 'A' | 'B' | 'C1' | 'C2' | 'C3' | 'D' | 'E';
+
+export type BudgetRowSource = 'BudgetFile' | 'Entered';
+
+export interface ConsortiumBudgetRowDto {
+  partner_id: string;
+  partner_name: string;
+  is_own_organization: boolean;
+  /** `BudgetFile` rows are read-only (BR-CB-02). */
+  source: BudgetRowSource;
+  /** Always holds all seven categories ("0" when unset). */
+  amounts: Record<CostCategory, string>;
+  total_eligible_eur: string;
+  /** null for the own organization (its contribution comes from the Budget file). */
+  funding_rate_pct: string | null;
+  requested_eu_contribution_eur: string;
+}
+
+export interface ConsortiumBudgetDto {
+  rows: ConsortiumBudgetRowDto[];
+  total_amounts: Record<CostCategory, string>;
+  total_eligible_eur: string;
+  total_requested_eu_contribution_eur: string;
+  /** false: no partner is marked as the own organization, so the Budget
+   * file's figures are missing from these totals. */
+  has_own_organization: boolean;
+}
+
+export interface LumpSumCellDto {
+  partner_id: string;
+  amount_eur: string;
+}
+
+export interface LumpSumPlanRowDto {
+  work_package_id: number;
+  work_package_name: string | null;
+  /** One cell per partner, in partner order ("0" when unset). */
+  cells: LumpSumCellDto[];
+  total_eur: string;
+}
+
+export interface LumpSumPlanDto {
+  rows: LumpSumPlanRowDto[];
+  /** One entry per partner, in partner order. */
+  partner_totals: LumpSumCellDto[];
+  grand_total_eur: string;
 }

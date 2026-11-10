@@ -84,7 +84,7 @@ pub(crate) fn remove_partner_planning_data(exec: &mut ExecutionData, partner_id:
     exec.lump_sum_shares.retain(|s| s.partner_id != partner_id);
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn set_funding_model(
     state: State<'_, AppState>,
     model: FundingModel,
@@ -105,7 +105,10 @@ pub fn set_funding_model(
     Ok(summary)
 }
 
-#[tauri::command]
+/// `rename_all = "snake_case"`: the frontend sends `partner_id`, matching
+/// every other multi-word-argument command in this app (Tauri 2's default
+/// would expect `partnerId` and silently reject the call at runtime).
+#[tauri::command(rename_all = "snake_case")]
 pub fn set_partner_budget_amount(
     state: State<'_, AppState>,
     partner_id: Uuid,
@@ -128,7 +131,8 @@ pub fn set_partner_budget_amount(
     Ok(summary)
 }
 
-#[tauri::command]
+/// See `set_partner_budget_amount` for why this is `snake_case`.
+#[tauri::command(rename_all = "snake_case")]
 pub fn set_lump_sum_share(
     state: State<'_, AppState>,
     work_package_id: u8,

@@ -13,6 +13,8 @@ import { Welcome } from './screens/Welcome';
 import { Dashboard } from './screens/Dashboard';
 import { Personnel } from './screens/Personnel';
 import { Partners } from './screens/Partners';
+import { ConsortiumBudget } from './screens/ConsortiumBudget';
+import { LumpSumPlan } from './screens/LumpSumPlan';
 import { WorkPackages } from './screens/WorkPackages';
 import { Milestones } from './screens/Milestones';
 import { Deliverables } from './screens/Deliverables';
@@ -42,6 +44,10 @@ export function App() {
         return <Personnel />;
       case 'partners':
         return <Partners />;
+      case 'consortium-budget':
+        return <ConsortiumBudget />;
+      case 'lump-sum-plan':
+        return <LumpSumPlan />;
       case 'work-packages':
         return <WorkPackages />;
       case 'milestones':

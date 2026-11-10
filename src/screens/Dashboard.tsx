@@ -10,13 +10,24 @@
  * commands::project::set_project_start_date's doc comment on the Rust
  * side for the full rationale). Every other field on this screen stays
  * read-only.
+ *
+ * M-25: the Funding Model is also chosen right here. Unlike Project Start
+ * Date it is execution-side data (never written to the Budget file), and
+ * switching it only changes which screens are shown, never any data.
  */
 
 import { useState, useEffect } from 'react';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionMutation } from '../hooks/useExecutionMutation';
-import { setProjectStartDate } from '../ipc/commands';
+import { setFundingModel, setProjectStartDate } from '../ipc/commands';
 import { fmtEur } from '../utils/currency';
+import {
+  FUNDING_MODELS,
+  FUNDING_MODEL_DESCRIPTION,
+  FUNDING_MODEL_LABEL,
+  plannedTotalForPartner,
+} from '../utils/consortium';
+import type { FundingModel } from '../types';
 
 const CFS_LABELS: Record<string, string> = {
   NOT_REQUIRED: 'Not Required',
@@ -68,6 +79,22 @@ export function Dashboard() {
           </button>
           {error && <span className="save-status-error">{error}</span>}
         </div>
+        <div className="inline-form project-start-date-form">
+          <label htmlFor="funding_model">Funding Model</label>
+          <select
+            id="funding_model"
+            value={summary.funding_model}
+            disabled={isSubmitting}
+            onChange={(e) => run(() => setFundingModel(e.target.value as FundingModel))}
+          >
+            {FUNDING_MODELS.map((m) => (
+              <option key={m} value={m}>
+                {FUNDING_MODEL_LABEL[m]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="subtitle">{FUNDING_MODEL_DESCRIPTION[summary.funding_model]}</p>
         <p className="subtitle">
           When the Grant Agreement takes effect — drives every "Month X"
           shown in this app. Distinct from Call Opening Date (set in ERC
@@ -153,7 +180,7 @@ export function Dashboard() {
             <thead>
               <tr>
                 <th>Partner</th>
-                <th>Planned Share</th>
+                <th>{summary.funding_model === 'Erc' ? 'Planned Share' : 'Planned'}</th>
                 <th>Actual (personnel only)</th>
                 <th />
               </tr>
@@ -162,7 +189,12 @@ export function Dashboard() {
               {partner_organizations.map((p) => (
                 <tr key={p.id}>
                   <td>{p.short_name ?? p.name}</td>
-                  <td>{p.planned_budget_share_eur ? fmtEur(p.planned_budget_share_eur) : '—'}</td>
+                  <td>
+                    {(() => {
+                      const planned = plannedTotalForPartner(summary, p.id);
+                      return planned ? fmtEur(planned) : '—';
+                    })()}
+                  </td>
                   <td>{fmtEur(p.actual_personnel_cost_eur)}</td>
                   <td>{p.over_budget_warning && <span className="warning-banner">&gt;10%</span>}</td>
                 </tr>

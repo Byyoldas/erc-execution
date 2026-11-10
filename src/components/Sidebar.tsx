@@ -8,7 +8,7 @@
  */
 
 import { useExecutionStore } from '../store/executionStore';
-import type { ExecutionScreen } from '../types';
+import type { ExecutionScreen, FundingModel } from '../types';
 import { SaveButton } from './SaveButton';
 
 /**
@@ -26,7 +26,9 @@ import { SaveButton } from './SaveButton';
  * Package" dropdown draws from it. Reports & Export is last, since it
  * depends on everything.
  */
-const MODULES: { label: string; screen: ExecutionScreen | null }[] = [
+type NavItem = { label: string; screen: ExecutionScreen | null };
+
+const MODULES: NavItem[] = [
   { label: 'Dashboard', screen: 'dashboard' },
   { label: 'Partners', screen: 'partners' },
   { label: 'Work Packages', screen: 'work-packages' },
@@ -44,16 +46,35 @@ const MODULES: { label: string; screen: ExecutionScreen | null }[] = [
   { label: 'Reports & Export', screen: 'reports-export' },
 ];
 
+/**
+ * M-25: the funding model decides which consortium-planning screen follows
+ * Partners (a budget needs partners to exist first). ERC projects see no
+ * extra entry at all -- the sidebar is exactly what it was before M-25.
+ */
+export function buildModules(fundingModel: FundingModel): NavItem[] {
+  const extra: NavItem | null =
+    fundingModel === 'HorizonActualCost'
+      ? { label: 'Consortium Budget', screen: 'consortium-budget' }
+      : fundingModel === 'HorizonLumpSum'
+        ? { label: 'Lump Sum Plan', screen: 'lump-sum-plan' }
+        : null;
+  if (!extra) return MODULES;
+
+  const partnersIndex = MODULES.findIndex((m) => m.screen === 'partners');
+  return [...MODULES.slice(0, partnersIndex + 1), extra, ...MODULES.slice(partnersIndex + 1)];
+}
+
 export function Sidebar() {
   const activeScreen = useExecutionStore((s) => s.activeScreen);
   const setActiveScreen = useExecutionStore((s) => s.setActiveScreen);
+  const fundingModel = useExecutionStore((s) => s.summary?.funding_model ?? 'Erc');
 
   return (
     <nav className="sidebar">
       <div className="sidebar-title">ERC Execution</div>
       <SaveButton />
       <ul>
-        {MODULES.map((m) => (
+        {buildModules(fundingModel).map((m) => (
           <li
             key={m.label}
             className={m.screen === null ? 'disabled' : m.screen === activeScreen ? 'active' : ''}

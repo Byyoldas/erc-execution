@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildProjectStatusReportHtml } from './pdfExporter';
 import type { ExecutionProjectSummaryDto } from '../types';
+import { emptyConsortiumPlanning } from '../__tests__/fixtures';
 
 function baseSummary(overrides: Partial<ExecutionProjectSummaryDto> = {}): ExecutionProjectSummaryDto {
   return {
@@ -71,6 +72,7 @@ function baseSummary(overrides: Partial<ExecutionProjectSummaryDto> = {}): Execu
     issues: [],
     warnings: [],
     partner_organizations: [],
+    ...emptyConsortiumPlanning(),
     ...overrides,
   };
 }

@@ -267,3 +267,52 @@ th, td {
   margin: 0 0 0.75rem;
   color: #94a3b8;
 }
+
+/* ─── M-25: funding model & consortium planning matrices ─────────────────── */
+
+.matrix th.num,
+.matrix td.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.matrix tfoot th {
+  border-top: 2px solid #334155;
+  border-bottom: none;
+}
+
+.matrix .row-own,
+tr.row-own {
+  background: #172033;
+}
+
+.amount-cell {
+  width: 7.5rem;
+  text-align: right;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: inherit;
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+}
+
+.amount-cell-invalid {
+  border-color: #f87171;
+}
+
+.badge-own {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  color: #60a5fa;
+  border: 1px solid #3b82f6;
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+
+.project-header select {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: inherit;
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+}

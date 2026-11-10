@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useExecutionStore } from './executionStore';
 import type { ExecutionProjectSummaryDto } from '../types';
+import { emptyConsortiumPlanning } from '../__tests__/fixtures';
 
 const summary: ExecutionProjectSummaryDto = {
   project_info: {
@@ -73,6 +74,7 @@ const summary: ExecutionProjectSummaryDto = {
   issues: [],
   warnings: [],
   partner_organizations: [],
+  ...emptyConsortiumPlanning(),
 };
 
 describe('useExecutionStore', () => {

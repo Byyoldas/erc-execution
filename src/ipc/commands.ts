@@ -8,9 +8,11 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
   ActualCostEntryInputDto,
   AmendmentInputDto,
+  CostCategory,
   DeliverableInputDto,
   EquipmentProcurementInputDto,
   ExecutionProjectSummaryDto,
+  FundingModel,
   IssueEntryInputDto,
   MilestoneInputDto,
   PartnerOrganizationInputDto,
@@ -217,3 +219,24 @@ export const updatePartnerOrganization = (
 
 export const deletePartnerOrganization = (id: string): Promise<ExecutionProjectSummaryDto> =>
   invoke('delete_partner_organization', { id });
+
+// ─── M-25: Funding Model & Consortium Planned Budget ─────────────────────────────
+
+export const setFundingModel = (model: FundingModel): Promise<ExecutionProjectSummaryDto> =>
+  invoke('set_funding_model', { model });
+
+/** `amount` null (or zero) removes the cell. Rejected for the own organization. */
+export const setPartnerBudgetAmount = (
+  partnerId: string,
+  category: CostCategory,
+  amount: string | null,
+): Promise<ExecutionProjectSummaryDto> =>
+  invoke('set_partner_budget_amount', { partner_id: partnerId, category, amount });
+
+/** `amount` null (or zero) removes the cell. */
+export const setLumpSumShare = (
+  workPackageId: number,
+  partnerId: string,
+  amount: string | null,
+): Promise<ExecutionProjectSummaryDto> =>
+  invoke('set_lump_sum_share', { work_package_id: workPackageId, partner_id: partnerId, amount });
