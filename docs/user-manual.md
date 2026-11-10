@@ -1,4 +1,4 @@
-# ERC Execution — User Manual (v1.1.3)
+# ERC Execution — User Manual (v1.2.0)
 
 ERC Execution tracks the day-to-day running of a Horizon Europe project
 against the budget you planned in the **Budget Application** (erc-budget).
