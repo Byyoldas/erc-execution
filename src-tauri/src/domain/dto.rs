@@ -603,6 +603,13 @@ pub struct PartnerOrganizationInputDto {
     #[serde(default, with = "rust_decimal::serde::str_option")]
     pub planned_budget_share_eur: Option<Decimal>,
     pub notes: Option<String>,
+    /// M-25, BR-PO-07. `#[serde(default)]` so a frontend that predates M-25
+    /// keeps working (it simply never sets the own organization).
+    #[serde(default)]
+    pub is_own_organization: bool,
+    /// M-25, BR-PO-08: 0-100, `None` means 100.
+    #[serde(default, with = "rust_decimal::serde::str_option")]
+    pub funding_rate_pct: Option<Decimal>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -619,6 +626,10 @@ pub struct PartnerOrganizationDetailDto {
     pub grant_agreement_signed: bool,
     pub planned_budget_share_eur: Option<Decimal>,
     pub notes: Option<String>,
+    /// M-25.
+    pub is_own_organization: bool,
+    /// M-25: as entered (`None` = not set, treated as 100 in calculations).
+    pub funding_rate_pct: Option<Decimal>,
     /// BR-PO-05. Personnel only (V1 scope) — see requirements doc §6.
     pub actual_personnel_cost_eur: Decimal,
     /// How many `Person` records currently link to this partner. Lets the

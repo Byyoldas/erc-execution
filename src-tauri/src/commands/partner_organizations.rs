@@ -36,8 +36,8 @@ pub fn add_partner_organization(
         grant_agreement_signed: input.grant_agreement_signed,
         planned_budget_share_eur: input.planned_budget_share_eur,
         notes: input.notes,
-        is_own_organization: false,
-        funding_rate_pct: None,
+        is_own_organization: input.is_own_organization,
+        funding_rate_pct: input.funding_rate_pct,
     });
 
     let summary = build_summary(project, exec, &state)?;
@@ -77,6 +77,8 @@ pub fn update_partner_organization(
     partner.grant_agreement_signed = input.grant_agreement_signed;
     partner.planned_budget_share_eur = input.planned_budget_share_eur;
     partner.notes = input.notes;
+    partner.is_own_organization = input.is_own_organization;
+    partner.funding_rate_pct = input.funding_rate_pct;
 
     let summary = build_summary(project, exec, &state)?;
     if let Some(path) = state.project_path.lock().unwrap().as_deref() {

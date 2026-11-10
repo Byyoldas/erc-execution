@@ -1030,6 +1030,109 @@ pub fn validate_partner_organization(
         }
     }
 
+    // BR-PO-07 (M-25): at most one partner may be the own organization.
+    if dto.is_own_organization {
+        let own_exists = existing.iter().any(|p| {
+            let is_self = exclude_id.map(|id| p.id == id).unwrap_or(false);
+            p.is_own_organization && !is_self
+        });
+        if own_exists {
+            errors.push(FieldError::new(
+                "is_own_organization",
+                "OWN_ORGANIZATION_ALREADY_SET",
+                "Another partner is already marked as your own organization.",
+            ));
+        }
+    }
+
+    // BR-PO-08 (M-25): funding rate is a percentage.
+    if let Some(rate) = dto.funding_rate_pct {
+        if rate < Decimal::ZERO || rate > Decimal::ONE_HUNDRED {
+            errors.push(FieldError::new(
+                "funding_rate_pct",
+                "INVALID_FUNDING_RATE",
+                "Funding rate must be between 0 and 100.",
+            ));
+        }
+    }
+
+    errors.into_result()
+}
+
+/// BR-CB-01/02 (M-25): validates setting one partner's planned amount in one
+/// cost category. `amount` of `None` or zero means "remove the line" and is
+/// always allowed for an existing, non-own partner.
+pub fn validate_partner_budget_amount(
+    partner_id: Uuid,
+    amount: Option<Decimal>,
+    partners: &[PartnerOrganization],
+) -> Result<(), AppError> {
+    let mut errors = ValidationErrors::default();
+
+    match partners.iter().find(|p| p.id == partner_id) {
+        None => errors.push(FieldError::new(
+            "partner_id",
+            "UNKNOWN_PARTNER",
+            "Partner organization not found.",
+        )),
+        // BR-CB-02: the own organization's planned figures come from the
+        // Budget file -- entering them here would create a second, possibly
+        // conflicting, source of truth.
+        Some(p) if p.is_own_organization => errors.push(FieldError::new(
+            "partner_id",
+            "OWN_ORG_FROM_BUDGET_FILE",
+            "Your own organization's planned budget comes from the Budget file and cannot be edited here.",
+        )),
+        Some(_) => {}
+    }
+
+    if amount.is_some_and(|a| a < Decimal::ZERO) {
+        errors.push(FieldError::new(
+            "amount_eur",
+            "NEGATIVE_AMOUNT",
+            "Amount cannot be negative.",
+        ));
+    }
+
+    errors.into_result()
+}
+
+/// BR-LS-01 (M-25): validates setting one partner's planned lump-sum share of
+/// one work package. Unlike `validate_partner_budget_amount`, the own
+/// organization is allowed (BR-LS-02: the Budget file has no lump-sum data).
+pub fn validate_lump_sum_share(
+    work_package_id: u8,
+    partner_id: Uuid,
+    amount: Option<Decimal>,
+    partners: &[PartnerOrganization],
+    work_package_count: u8,
+) -> Result<(), AppError> {
+    let mut errors = ValidationErrors::default();
+
+    if work_package_id == 0 || work_package_id > work_package_count {
+        errors.push(FieldError::new(
+            "work_package_id",
+            "WP_OUT_OF_RANGE",
+            format!("Work package must be between 1 and {work_package_count}."),
+        ));
+    }
+
+    if !partners.iter().any(|p| p.id == partner_id) {
+        errors.push(FieldError::new(
+            "partner_id",
+            "UNKNOWN_PARTNER",
+            "Partner organization not found.",
+        ));
+    }
+
+    if amount.is_some_and(|a| a < Decimal::ZERO) {
+        errors.push(FieldError::new(
+            "amount_eur",
+            "NEGATIVE_AMOUNT",
+            "Amount cannot be negative.",
+        ));
+    }
+
     errors.into_result()
 }
 
@@ -2278,6 +2381,17 @@ mod tests {
             grant_agreement_signed: false,
             planned_budget_share_eur: None,
             notes: None,
+            is_own_organization: false,
+            funding_rate_pct: None,
+        }
+    }
+
+    /// The machine-readable codes of a validation failure (empty for `Ok`).
+    fn error_codes(result: Result<(), AppError>) -> Vec<String> {
+        match result {
+            Err(AppError::Validation(errors)) => errors.into_iter().map(|e| e.code).collect(),
+            Err(other) => panic!("expected a validation error, got {other:?}"),
+            Ok(()) => Vec::new(),
         }
     }
 
@@ -2423,5 +2537,158 @@ mod tests {
     #[test]
     fn test_val_po_deletion_allowed_when_no_persons_at_all() {
         assert!(validate_partner_organization_deletion(Uuid::new_v4(), &[]).is_ok());
+    }
+
+    // ─── M-25: own organization, funding rate, consortium planning ─────
+
+    fn own_partner(id: Uuid) -> PartnerOrganization {
+        let mut p = make_partner(id, "Own University", PartnerRole::Beneficiary);
+        p.is_own_organization = true;
+        p
+    }
+
+    #[test]
+    fn test_val_po_second_own_organization_returns_error() {
+        let mut dto = partner_dto();
+        dto.is_own_organization = true;
+        let codes = error_codes(validate_partner_organization(
+            &dto,
+            &[own_partner(Uuid::new_v4())],
+            None,
+        ));
+        assert_eq!(codes, vec!["OWN_ORGANIZATION_ALREADY_SET"]);
+    }
+
+    #[test]
+    fn test_val_po_first_own_organization_is_ok() {
+        let mut dto = partner_dto();
+        dto.is_own_organization = true;
+        assert!(validate_partner_organization(&dto, &[], None).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_update_excludes_self_from_own_organization_check() {
+        let self_id = Uuid::new_v4();
+        let mut dto = partner_dto();
+        dto.is_own_organization = true;
+        assert!(validate_partner_organization(&dto, &[own_partner(self_id)], Some(self_id)).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_not_own_organization_ignores_existing_own_organization() {
+        // Saving a non-own partner must never trip BR-PO-07.
+        let dto = partner_dto();
+        assert!(validate_partner_organization(&dto, &[own_partner(Uuid::new_v4())], None).is_ok());
+    }
+
+    #[test]
+    fn test_val_po_funding_rate_bounds() {
+        for (rate, ok) in [
+            (dec!(0), true),
+            (dec!(70), true),
+            (dec!(100), true),
+            (dec!(-0.01), false),
+            (dec!(100.01), false),
+        ] {
+            let mut dto = partner_dto();
+            dto.funding_rate_pct = Some(rate);
+            let codes = error_codes(validate_partner_organization(&dto, &[], None));
+            assert_eq!(codes.is_empty(), ok, "rate {rate}");
+            if !ok {
+                assert_eq!(codes, vec!["INVALID_FUNDING_RATE"]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_val_po_funding_rate_none_is_ok() {
+        let mut dto = partner_dto();
+        dto.funding_rate_pct = None;
+        assert!(validate_partner_organization(&dto, &[], None).is_ok());
+    }
+
+    #[test]
+    fn test_val_cb_valid_amount_for_other_partner_is_ok() {
+        let id = Uuid::new_v4();
+        let partners = [make_partner(id, "KTH", PartnerRole::Beneficiary)];
+        assert!(validate_partner_budget_amount(id, Some(dec!(1000)), &partners).is_ok());
+    }
+
+    #[test]
+    fn test_val_cb_none_and_zero_are_allowed_removal_requests() {
+        let id = Uuid::new_v4();
+        let partners = [make_partner(id, "KTH", PartnerRole::Beneficiary)];
+        assert!(validate_partner_budget_amount(id, None, &partners).is_ok());
+        assert!(validate_partner_budget_amount(id, Some(dec!(0)), &partners).is_ok());
+    }
+
+    #[test]
+    fn test_val_cb_negative_amount_returns_error() {
+        let id = Uuid::new_v4();
+        let partners = [make_partner(id, "KTH", PartnerRole::Beneficiary)];
+        let codes = error_codes(validate_partner_budget_amount(id, Some(dec!(-1)), &partners));
+        assert_eq!(codes, vec!["NEGATIVE_AMOUNT"]);
+    }
+
+    #[test]
+    fn test_val_cb_unknown_partner_returns_error() {
+        let codes = error_codes(validate_partner_budget_amount(Uuid::new_v4(), Some(dec!(1)), &[]));
+        assert_eq!(codes, vec!["UNKNOWN_PARTNER"]);
+    }
+
+    #[test]
+    fn test_val_cb_own_organization_is_rejected() {
+        let id = Uuid::new_v4();
+        let codes = error_codes(validate_partner_budget_amount(
+            id,
+            Some(dec!(1000)),
+            &[own_partner(id)],
+        ));
+        assert_eq!(codes, vec!["OWN_ORG_FROM_BUDGET_FILE"]);
+    }
+
+    #[test]
+    fn test_val_ls_valid_share_is_ok() {
+        let id = Uuid::new_v4();
+        let partners = [make_partner(id, "KTH", PartnerRole::Beneficiary)];
+        assert!(validate_lump_sum_share(2, id, Some(dec!(50000)), &partners, 5).is_ok());
+    }
+
+    #[test]
+    fn test_val_ls_own_organization_is_allowed() {
+        // BR-LS-02: unlike actual-cost budgets, the own organization's
+        // lump-sum shares are entered by hand.
+        let id = Uuid::new_v4();
+        assert!(validate_lump_sum_share(1, id, Some(dec!(50000)), &[own_partner(id)], 5).is_ok());
+    }
+
+    #[test]
+    fn test_val_ls_wp_out_of_range_returns_error() {
+        let id = Uuid::new_v4();
+        let partners = [make_partner(id, "KTH", PartnerRole::Beneficiary)];
+        for wp in [0u8, 6] {
+            let codes = error_codes(validate_lump_sum_share(wp, id, Some(dec!(1)), &partners, 5));
+            assert_eq!(codes, vec!["WP_OUT_OF_RANGE"], "wp {wp}");
+        }
+    }
+
+    #[test]
+    fn test_val_ls_unknown_partner_returns_error() {
+        let codes = error_codes(validate_lump_sum_share(1, Uuid::new_v4(), Some(dec!(1)), &[], 5));
+        assert_eq!(codes, vec!["UNKNOWN_PARTNER"]);
+    }
+
+    #[test]
+    fn test_val_ls_negative_amount_returns_error() {
+        let id = Uuid::new_v4();
+        let partners = [make_partner(id, "KTH", PartnerRole::Beneficiary)];
+        let codes = error_codes(validate_lump_sum_share(1, id, Some(dec!(-5)), &partners, 5));
+        assert_eq!(codes, vec!["NEGATIVE_AMOUNT"]);
+    }
+
+    #[test]
+    fn test_val_ls_reports_every_problem_at_once() {
+        let codes = error_codes(validate_lump_sum_share(9, Uuid::new_v4(), Some(dec!(-5)), &[], 5));
+        assert_eq!(codes.len(), 3);
     }
 }

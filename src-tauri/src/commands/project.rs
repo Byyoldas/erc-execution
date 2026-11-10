@@ -160,6 +160,8 @@ pub(crate) fn build_summary(
                 grant_agreement_signed: partner.grant_agreement_signed,
                 planned_budget_share_eur: partner.planned_budget_share_eur,
                 notes: partner.notes.clone(),
+                is_own_organization: partner.is_own_organization,
+                funding_rate_pct: partner.funding_rate_pct,
                 actual_personnel_cost_eur,
                 linked_person_count,
                 over_budget_warning,
