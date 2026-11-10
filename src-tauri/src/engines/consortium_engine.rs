@@ -147,7 +147,7 @@ pub fn calculate_consortium_budget(
 pub fn calculate_lump_sum_plan(
     partners: &[PartnerOrganization],
     shares: &[LumpSumShare],
-    work_packages: &[(u8, String)],
+    work_packages: &[(u8, Option<String>)],
 ) -> LumpSumPlanDto {
     let mut partner_totals: Vec<LumpSumCellDto> = partners
         .iter()
@@ -474,8 +474,11 @@ mod tests {
         }
     }
 
-    fn wps() -> Vec<(u8, String)> {
-        vec![(1, "Management".to_string()), (2, "Research".to_string())]
+    fn wps() -> Vec<(u8, Option<String>)> {
+        vec![
+            (1, Some("Management".to_string())),
+            (2, Some("Research".to_string())),
+        ]
     }
 
     #[test]
@@ -488,7 +491,7 @@ mod tests {
         assert!(plan.rows.iter().all(|r| r.cells.len() == 2));
         assert_eq!(plan.partner_totals.len(), 2);
         assert_eq!(plan.grand_total_eur, dec!(0));
-        assert_eq!(plan.rows[1].work_package_name, "Research");
+        assert_eq!(plan.rows[1].work_package_name.as_deref(), Some("Research"));
     }
 
     #[test]

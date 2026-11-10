@@ -111,6 +111,9 @@ pub fn run() {
             commands::partner_organizations::add_partner_organization,
             commands::partner_organizations::update_partner_organization,
             commands::partner_organizations::delete_partner_organization,
+            commands::consortium::set_funding_model,
+            commands::consortium::set_partner_budget_amount,
+            commands::consortium::set_lump_sum_share,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

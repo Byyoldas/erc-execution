@@ -1,5 +1,6 @@
 //! IPC commands for M-24 Partner Organization Management.
 
+use crate::commands::consortium::remove_partner_planning_data;
 use crate::commands::project::build_summary;
 use crate::domain::dto::{ExecutionProjectSummaryDto, PartnerOrganizationInputDto};
 use crate::domain::execution_entities::PartnerOrganization;
@@ -108,6 +109,8 @@ pub fn delete_partner_organization(
             "Partner organization '{id}' not found."
         )));
     }
+    // BR-PO-09: its planned budget lines and lump-sum shares go with it.
+    remove_partner_planning_data(exec, id);
 
     let summary = build_summary(project, exec, &state)?;
     if let Some(path) = state.project_path.lock().unwrap().as_deref() {

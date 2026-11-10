@@ -454,6 +454,40 @@ mod tests {
     }
 
     #[test]
+    fn test_save_and_load_roundtrip_preserves_m25_funding_model_and_consortium_plan() {
+        use crate::domain::enums::{CostCategory, FundingModel};
+        use crate::domain::execution_entities::{LumpSumShare, PartnerBudgetLine};
+        use rust_decimal_macros::dec;
+
+        let project = make_project();
+        let partner_id = uuid::Uuid::new_v4();
+        let mut exec = ExecutionData {
+            funding_model: FundingModel::HorizonLumpSum,
+            ..ExecutionData::default()
+        };
+        exec.partner_budget_lines.push(PartnerBudgetLine {
+            id: uuid::Uuid::new_v4(),
+            partner_id,
+            category: CostCategory::C3,
+            amount_eur: dec!(1234.56),
+        });
+        exec.lump_sum_shares.push(LumpSumShare {
+            id: uuid::Uuid::new_v4(),
+            work_package_id: 2,
+            partner_id,
+            amount_eur: dec!(75000),
+        });
+
+        let path = temp_path("m25-consortium-plan-roundtrip");
+        save_execution(&project, &exec, &path).unwrap();
+        let (_, reloaded_exec) = load_execution(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+
+        assert_eq!(exec, reloaded_exec);
+        assert_eq!(reloaded_exec.funding_model, FundingModel::HorizonLumpSum);
+    }
+
+    #[test]
     fn test_save_writes_format_version_1_1() {
         let project = make_project();
         let exec = ExecutionData::default();

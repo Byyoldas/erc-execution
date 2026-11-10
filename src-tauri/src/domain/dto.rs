@@ -8,7 +8,7 @@
 
 use super::enums::{
     AmendmentStatus, AmendmentType, CostCategory, DeliverableStatus, DeliverableType,
-    DisseminationLevel, EntryStatus, IssueStatus, Level, MilestoneStatus, NavigationTarget,
+    DisseminationLevel, EntryStatus, FundingModel, IssueStatus, Level, MilestoneStatus, NavigationTarget,
     PartnerRole, PartnerValidationStatus, ReportingPeriodStatus, RiskStatus, WarningSeverity,
     WpStatus,
 };
@@ -84,6 +84,11 @@ pub struct ExecutionProjectSummaryDto {
     pub issues: Vec<IssueEntryDetailDto>,
     pub warnings: Vec<WarningDto>,
     pub partner_organizations: Vec<PartnerOrganizationDetailDto>,
+    /// M-25.
+    pub funding_model: FundingModel,
+    /// M-25: always computed; the UI shows the one matching `funding_model`.
+    pub consortium_budget: ConsortiumBudgetDto,
+    pub lump_sum_plan: LumpSumPlanDto,
 }
 
 /// UI-convenience projections of read-only Budget App entities, just enough
@@ -691,7 +696,8 @@ pub struct LumpSumCellDto {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct LumpSumPlanRowDto {
     pub work_package_id: u8,
-    pub work_package_name: String,
+    /// Optional in the Budget file; the UI falls back to "WP n".
+    pub work_package_name: Option<String>,
     /// One cell per partner, in partner order (zero when unset).
     pub cells: Vec<LumpSumCellDto>,
     pub total_eur: Decimal,

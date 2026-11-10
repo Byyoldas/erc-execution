@@ -169,6 +169,32 @@ pub(crate) fn build_summary(
         })
         .collect();
 
+    // M-25: consortium planning. The own organization's row is lifted from
+    // the Budget file's own summary (`planned`), never stored here.
+    let consortium_budget = consortium_engine::calculate_consortium_budget(
+        &exec.partner_organizations,
+        &exec.partner_budget_lines,
+        &consortium_engine::OwnBudgetFigures {
+            a: planned.category_a_total,
+            b: planned.category_b_total,
+            c1: planned.category_c1_total,
+            c2: planned.category_c2_total,
+            c3: planned.category_c3_total,
+            e: planned.category_e_total,
+            requested_eu_contribution: planned.requested_eu_contribution,
+        },
+    );
+    let lump_sum_plan = consortium_engine::calculate_lump_sum_plan(
+        &exec.partner_organizations,
+        &exec.lump_sum_shares,
+        &project
+            .config
+            .work_packages()
+            .into_iter()
+            .map(|wp| (wp.id, wp.name))
+            .collect::<Vec<_>>(),
+    );
+
     let wp_actual_personnel = progress_engine::calculate_wp_actual_personnel_eur(
         project,
         &exec.person_month_records,
@@ -601,6 +627,9 @@ pub(crate) fn build_summary(
         issues,
         warnings,
         partner_organizations,
+        funding_model: exec.funding_model,
+        consortium_budget,
+        lump_sum_plan,
     })
 }
 
